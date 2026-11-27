@@ -114,6 +114,7 @@ class QField extends StatelessWidget {
   final bool obscure;
   final TextInputType? keyboard;
   final TextEditingController? controller;
+  final String? helper;
   const QField({
     super.key,
     required this.label,
@@ -121,6 +122,7 @@ class QField extends StatelessWidget {
     this.obscure = false,
     this.keyboard,
     this.controller,
+    this.helper,
   });
 
   @override
@@ -131,7 +133,7 @@ class QField extends StatelessWidget {
         controller: controller,
         obscureText: obscure,
         keyboardType: keyboard,
-        decoration: InputDecoration(labelText: label, hintText: hint),
+        decoration: InputDecoration(labelText: label, hintText: hint, helperText: helper),
       ),
     );
   }

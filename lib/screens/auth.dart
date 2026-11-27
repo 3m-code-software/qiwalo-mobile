@@ -284,8 +284,165 @@ class LoginScreen extends StatelessWidget {
   }
 }
 
-class SignupScreen extends StatelessWidget {
+class _DialCode {
+  const _DialCode(this.country, this.label, this.dial);
+
+  final String country;
+  final String label;
+  final String dial;
+}
+
+const List<_DialCode> _dialCodes = [
+  _DialCode('EG', 'مصر +20', '+20'),
+  _DialCode('SA', 'السعودية +966', '+966'),
+  _DialCode('AE', 'الإمارات +971', '+971'),
+  _DialCode('KW', 'الكويت +965', '+965'),
+  _DialCode('QA', 'قطر +974', '+974'),
+  _DialCode('BH', 'البحرين +973', '+973'),
+  _DialCode('OM', 'عُمان +968', '+968'),
+  _DialCode('JO', 'الأردن +962', '+962'),
+  _DialCode('LB', 'لبنان +961', '+961'),
+  _DialCode('MA', 'المغرب +212', '+212'),
+  _DialCode('DZ', 'الجزائر +213', '+213'),
+  _DialCode('TN', 'تونس +216', '+216'),
+  _DialCode('IQ', 'العراق +964', '+964'),
+  _DialCode('TR', 'تركيا +90', '+90'),
+  _DialCode('US', 'أمريكا +1', '+1'),
+  _DialCode('GB', 'بريطانيا +44', '+44'),
+  _DialCode('DE', 'ألمانيا +49', '+49'),
+  _DialCode('FR', 'فرنسا +33', '+33'),
+];
+
+String _dialCodeFromDeviceLocale() {
+  final country = WidgetsBinding.instance.platformDispatcher.locale.countryCode;
+  if (country != null) {
+    for (final option in _dialCodes) {
+      if (option.country == country) return option.dial;
+    }
+  }
+  // التطبيق موجه أساساً لمصر؛ ده الـ fallback لو المنطقة مش معروفة.
+  return '+20';
+}
+
+class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
+
+  @override
+  State<SignupScreen> createState() => _SignupScreenState();
+}
+
+class _SignupScreenState extends State<SignupScreen> {
+  late String _dialCode;
+  bool _obscurePassword = true;
+  bool _agreed = true;
+  final TextEditingController _passwordController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _dialCode = _dialCodeFromDeviceLocale();
+  }
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  int get _passwordScore {
+    final value = _passwordController.text;
+    if (value.isEmpty) return 0;
+    var score = 0;
+    if (value.length >= 8) score++;
+    if (value.length >= 12) score++;
+    if (value.contains(RegExp(r'[A-Za-z]'))) score++;
+    if (value.contains(RegExp(r'[0-9]'))) score++;
+    if (value.contains(RegExp(r'[^A-Za-z0-9]'))) score++;
+    return score > 4 ? 4 : score;
+  }
+
+  String get _passwordLabel => switch (_passwordScore) {
+        0 => 'اكتب كلمة مرور',
+        1 => 'ضعيفة',
+        2 => 'متوسطة',
+        3 => 'جيدة',
+        _ => 'قوية',
+      };
+
+  Color get _passwordColor => switch (_passwordScore) {
+        0 => muted,
+        1 => dangerRed,
+        2 => Colors.orange,
+        3 => gold,
+        _ => successGreen,
+      };
+
+  void _showTerms() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 18, 20, 10),
+              child: Text(
+                'الشروط والأحكام',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: navy),
+              ),
+            ),
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                children: const [
+                  _TermSection(
+                    title: '١ · الحجز والتأكيد',
+                    body: 'الحجز يتأكد تلقائياً بعد إدخال بيانات الضيف. رقم التليفون إلزامي، وحساب واحد فقط لكل رقم.',
+                  ),
+                  _TermSection(
+                    title: '٢ · الدفع',
+                    body: 'تحويل بنكي أو كاش عند الوصول. مش بنطلب بيانات بطاقة داخل التطبيق.',
+                  ),
+                  _TermSection(
+                    title: '٣ · الخصوصية',
+                    body: 'بياناتك بتُستخدم لتأكيد الحجز والتواصل معك بس، ومش بتتشارك مع أطراف تانية غير مقدم الخدمة.',
+                  ),
+                  _TermSection(
+                    title: '٤ · الدعم',
+                    body: 'الدعم متاح عبر واتساب أو تليجرام أو الاتصال على 01066094050.',
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 18),
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(sheetContext),
+                child: const Text('إغلاق'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _createAccount() {
+    if (!_agreed) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('لازم توافق على الشروط والأحكام أولاً')),
+      );
+      return;
+    }
+    Navigator.pushNamed(context, '/telegram');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -294,11 +451,71 @@ class SignupScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          const QField(label: 'الاسم الكامل', hint: 'مثال: أحمد محمد'),
+          const QField(
+            label: 'الاسم الكامل',
+            hint: 'مثال: أحمد محمد',
+            helper: 'اكتب الاسم كما يظهر في بطاقة الهوية أو جواز السفر',
+          ),
           const QField(label: 'الإيميل', hint: 'name@example.com', keyboard: TextInputType.emailAddress),
-          const QField(label: 'رقم التليفون', hint: '01xxxxxxxxx', keyboard: TextInputType.phone),
-          const QField(label: 'الباسورد', hint: '••••••••', obscure: true),
-          const SizedBox(height: 4),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 124,
+                child: DropdownButtonFormField<String>(
+                  initialValue: _dialCode,
+                  isExpanded: true,
+                  decoration: const InputDecoration(labelText: 'الدولة'),
+                  items: _dialCodes
+                      .map(
+                        (option) => DropdownMenuItem<String>(
+                              value: option.dial,
+                              child: Text(option.label, overflow: TextOverflow.ellipsis),
+                            ),
+                      )
+                      .toList(),
+                  onChanged: (value) => setState(() => _dialCode = value ?? '+20'),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: TextField(
+                  keyboardType: TextInputType.phone,
+                  textAlign: TextAlign.right,
+                  decoration: InputDecoration(
+                    labelText: 'رقم التليفون',
+                    hintText: '01xxxxxxxxx',
+                    helperText: 'أدخل الرقم بدون $_dialCode',
+                  ),
+                ),
+              ),
+            ],
+          ),
+          TextField(
+            controller: _passwordController,
+            obscureText: _obscurePassword,
+            textAlign: TextAlign.right,
+            onChanged: (_) => setState(() {}),
+            decoration: InputDecoration(
+              labelText: 'الباسورد',
+              hintText: '••••••••',
+              helperText: 'قوة كلمة المرور: $_passwordLabel',
+              helperStyle: TextStyle(color: _passwordColor),
+              suffixIcon: IconButton(
+                icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
+                tooltip: _obscurePassword ? 'إظهار كلمة المرور' : 'إخفاء كلمة المرور',
+                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          LinearProgressIndicator(
+            value: _passwordScore / 4,
+            backgroundColor: line,
+            color: _passwordColor,
+            minHeight: 4,
+          ),
+          const SizedBox(height: 12),
           DropdownButtonFormField<String>(
             initialValue: 'GUEST',
             decoration: const InputDecoration(labelText: 'نوع الحساب'),
@@ -311,20 +528,58 @@ class SignupScreen extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Row(
-            children: const [
-              SizedBox(width: 24, height: 24, child: Checkbox(value: true, onChanged: null)),
-              SizedBox(width: 8),
-              Expanded(child: Text('أوافق على الشروط والأحكام وسياسة الخصوصية')),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 24,
+                height: 24,
+                child: Checkbox(
+                  value: _agreed,
+                  onChanged: (value) => setState(() => _agreed = value ?? false),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: InkWell(
+                  onTap: _showTerms,
+                  child: const Text(
+                    'أوافق على الشروط والأحكام وسياسة الخصوصية',
+                    style: TextStyle(color: navy, decoration: TextDecoration.underline),
+                  ),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 12),
-          PrimaryButton(label: 'إنشاء الحساب', onPressed: () => Navigator.pushNamed(context, '/telegram')),
+          PrimaryButton(label: 'إنشاء الحساب', onPressed: _createAccount),
           const SizedBox(height: 12),
           const Text(
             'رقم التليفون إلزامي، وحساب واحد فقط لكل رقم.',
             textAlign: TextAlign.center,
             style: TextStyle(color: muted, fontSize: 12),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TermSection extends StatelessWidget {
+  const _TermSection({required this.title, required this.body});
+
+  final String title;
+  final String body;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: navy)),
+          const SizedBox(height: 4),
+          Text(body, style: const TextStyle(color: muted, height: 1.5)),
         ],
       ),
     );

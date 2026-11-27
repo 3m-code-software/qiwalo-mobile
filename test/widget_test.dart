@@ -8,6 +8,7 @@ import 'package:qiwalo_app/api/api_client.dart';
 import 'package:qiwalo_app/api/role_repository.dart';
 import 'package:qiwalo_app/api/unit_repository.dart';
 import 'package:qiwalo_app/main.dart';
+import 'package:qiwalo_app/screens/auth.dart';
 import 'package:qiwalo_app/screens/design_index.dart';
 import 'package:qiwalo_app/owner_driver_data.dart';
 import 'package:qiwalo_app/screens/discover.dart';
@@ -97,6 +98,42 @@ void main() {
     expect(find.text('اكتب رسالتك'), findsOneWidget);
     expect(find.text('إرسال عبر واتساب'), findsOneWidget);
     expect(find.text('إرسال عبر تليجرام'), findsOneWidget);
+  });
+
+  testWidgets('إنشاء الحساب: كود الدولة والاسم والباسورد والشروط داخل الشاشة', (tester) async {
+    final previousLocale = tester.binding.platformDispatcher.locale;
+    tester.binding.platformDispatcher.localeTestValue = const Locale('ar', 'EG');
+    addTearDown(() =>
+        tester.binding.platformDispatcher.localeTestValue = previousLocale);
+    await tester.binding.setSurfaceSize(const Size(412, 1400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(const MaterialApp(home: SignupScreen()));
+
+    expect(find.text('مصر +20'), findsOneWidget);
+    expect(
+      find.text('اكتب الاسم كما يظهر في بطاقة الهوية أو جواز السفر'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('قوة كلمة المرور: اكتب كلمة مرور'), findsOneWidget);
+    expect(find.byIcon(Icons.visibility), findsOneWidget);
+
+    final passwordField = find.ancestor(
+      of: find.text('الباسورد'),
+      matching: find.byType(TextField),
+    ).first;
+    await tester.enterText(passwordField, 'Qiwalo123!');
+    await tester.pump();
+    expect(find.textContaining('قوة كلمة المرور: قوية'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.visibility));
+    await tester.pump();
+    expect(find.byIcon(Icons.visibility_off), findsOneWidget);
+
+    await tester.tap(find.text('أوافق على الشروط والأحكام وسياسة الخصوصية'));
+    await tester.pumpAndSettle();
+    expect(find.text('١ · الحجز والتأكيد'), findsOneWidget);
+    expect(find.text('إغلاق'), findsOneWidget);
+    expect(find.text('إنشاء حساب'), findsWidgets);
   });
 
   testWidgets('الاتجاه RTL مفروض على كل التطبيق', (tester) async {
