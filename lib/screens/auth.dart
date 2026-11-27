@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../widgets.dart';
@@ -18,11 +16,11 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   @override
   void initState() {
     super.initState();
-    // حركة هادية وسلسة عشان التطبيق يبان حيّ من غير ما يبعد عن راحة البصر.
+    // تكبير بطيء جداً لصورة النيل؛ حركة هادية ومقصودة مش مؤثرات عشوائية.
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 14),
-    )..repeat();
+      duration: const Duration(seconds: 24),
+    )..repeat(reverse: true);
   }
 
   @override
@@ -40,9 +38,34 @@ class _OnboardingScreenState extends State<OnboardingScreen>
           Positioned.fill(
             child: AnimatedBuilder(
               animation: _controller,
-              builder: (context, _) => CustomPaint(
-                painter: _WelcomeBackdropPainter(_controller.value),
-                child: const SizedBox.expand(),
+              builder: (context, _) {
+                final scale =
+                    1.02 + 0.04 * Curves.easeInOut.transform(_controller.value);
+                return Transform.scale(
+                  scale: scale,
+                  child: Image.asset(
+                    'assets/welcome_luxor.jpg',
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: double.infinity,
+                    errorBuilder: (_, _, _) => const ColoredBox(color: navy),
+                  ),
+                );
+              },
+            ),
+          ),
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    navy.withValues(alpha: 0.90),
+                    navy.withValues(alpha: 0.68),
+                    navy.withValues(alpha: 0.94),
+                  ],
+                ),
               ),
             ),
           ),
@@ -109,6 +132,12 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                       style: TextStyle(color: Color(0xFFC7D2DF), fontSize: 12),
                     ),
                   ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'صورة النيل: Vyacheslav Argenberg · CC BY 4.0',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Color(0x99FFFFFF), fontSize: 9),
+                  ),
                 ],
               ),
             ),
@@ -147,110 +176,6 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       ),
     );
   }
-}
-
-/// خلفية متحركة: توهّج خفيف + جزيئات ذهبية صاعدة + موجتان بيتحركوا ببطء،
-/// إشارة بصرية إن التطبيق شغّال وحّي من غير صوت أو استهلاك واضح للبطارية.
-class _WelcomeBackdropPainter extends CustomPainter {
-  const _WelcomeBackdropPainter(this.value);
-
-  final double value;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final phase = value * math.pi * 2;
-
-    _glow(
-      canvas,
-      center: Offset(
-        size.width * (0.24 + 0.05 * math.sin(phase)),
-        size.height * (0.22 + 0.03 * math.cos(phase)),
-      ),
-      radius: size.width * 0.62,
-      color: gold.withValues(alpha: 0.13),
-    );
-    _glow(
-      canvas,
-      center: Offset(
-        size.width * (0.82 + 0.04 * math.cos(phase * 0.8)),
-        size.height * (0.74 + 0.04 * math.sin(phase * 0.6)),
-      ),
-      radius: size.width * 0.55,
-      color: const Color(0xFF2E6C8E).withValues(alpha: 0.22),
-    );
-
-    for (var i = 0; i < 9; i++) {
-      final progress = (value + i / 9) % 1;
-      final x = size.width * (0.08 + 0.84 * ((i * 37) % 100) / 100);
-      final y = size.height * (1.06 - progress * 1.2);
-      final radius = 1.6 + (i % 3) * 1.1;
-      final alpha = 0.08 + 0.30 * math.sin(progress * math.pi);
-      canvas.drawCircle(
-        Offset(x, y),
-        radius,
-        Paint()..color = gold.withValues(alpha: alpha),
-      );
-    }
-
-    _wave(
-      canvas,
-      size,
-      phase: phase,
-      baseY: size.height * 0.78,
-      amplitude: 16,
-      waveLength: size.width * 0.75,
-      color: navyLight.withValues(alpha: 0.55),
-    );
-    _wave(
-      canvas,
-      size,
-      phase: phase * 1.35 + 1.2,
-      baseY: size.height * 0.88,
-      amplitude: 11,
-      waveLength: size.width * 0.55,
-      color: gold.withValues(alpha: 0.16),
-    );
-  }
-
-  void _glow(
-    Canvas canvas, {
-    required Offset center,
-    required double radius,
-    required Color color,
-  }) {
-    canvas.drawCircle(
-      center,
-      radius,
-      Paint()
-        ..shader = RadialGradient(
-          colors: [color, Colors.transparent],
-        ).createShader(Rect.fromCircle(center: center, radius: radius)),
-    );
-  }
-
-  void _wave(
-    Canvas canvas,
-    Size size, {
-    required double phase,
-    required double baseY,
-    required double amplitude,
-    required double waveLength,
-    required Color color,
-  }) {
-    final path = Path()..moveTo(0, size.height);
-    for (double x = 0; x <= size.width + 6; x += 6) {
-      final y = baseY + math.sin((x / waveLength) * math.pi * 2 + phase) * amplitude;
-      path.lineTo(x, y);
-    }
-    path
-      ..lineTo(size.width, size.height)
-      ..close();
-    canvas.drawPath(path, Paint()..color = color);
-  }
-
-  @override
-  bool shouldRepaint(covariant _WelcomeBackdropPainter oldDelegate) =>
-      oldDelegate.value != value;
 }
 
 int passwordStrengthScore(String value) {

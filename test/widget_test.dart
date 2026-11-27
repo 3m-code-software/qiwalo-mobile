@@ -71,9 +71,11 @@ void main() {
     expect(find.text('معاينة كل الشاشات'), findsOneWidget);
     expect(find.text('كل الشاشات · ٢٤'), findsNothing);
 
-    // الخلفية المتحركة لازم تشتغل لعدة إطارات من غير ما ترفع استثناء.
+    // خلفية الصورة لازم تتحرك ببطء لعدة إطارات من غير ما ترفع استثناء.
     await tester.pump(const Duration(seconds: 2));
     expect(find.text('قيوالو'), findsOneWidget);
+    expect(find.byType(Image), findsOneWidget);
+    expect(find.textContaining('صورة النيل'), findsOneWidget);
   });
 
   testWidgets('فهرس المراجعة لسه بيعرض الشاشات الخمس والعشرين', (tester) async {
