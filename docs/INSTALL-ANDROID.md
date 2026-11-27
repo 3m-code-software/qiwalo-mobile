@@ -20,7 +20,7 @@
    ```powershell
    C:\Users\musta\AppData\Local\Android\Sdk\platform-tools\adb.exe install -r "K:\qiwalo\qiwalo-flutter\releases\qiwalo.apk"
    ```
-6. افتح «قيوالو» من قائمة التطبيقات. أول شاشة هي **الترحيب** بخلفية متحركة (توهّج وجزيئات وموجات بتتحرك بهدوء)؛ اضغط «ابدأ الآن» أو «عندي حساب · دخول». ضغط «تواصل» يفتح صفحة تواصل داخلية (واتساب/تليجرام/تليفون ورسالة جاهزة)، و«معاينة كل الشاشات» تفتح فهرس المراجعة.
+6. افتح «قيوالو» من قائمة التطبيقات. أول شاشة هي **الترحيب** بخلفية صورة النيل في الأقصر وتكبير بطيء هادي؛ اضغط «ابدأ الآن» أو «عندي حساب · دخول». ضغط «تواصل» يفتح صفحة تواصل داخلية (واتساب/تليجرام/تليفون ورسالة جاهزة)، و«معاينة كل الشاشات» تفتح فهرس المراجعة.
 
 ## الطريقة ٢ — من غير كابل
 
@@ -48,18 +48,20 @@
 
 ```powershell
 cd K:\qiwalo\qiwalo-flutter
-# افتراضي: BFF المنشور https://qiwalo-ygzh.vercel.app
-flutter build apk --debug
-Copy-Item build\app\outputs\flutter-apk\app-debug.apk releases\qiwalo.apk -Force
+# افتراضي: BFF المنشور https://qiwalo-ygzh.vercel.app + توقيع Release
+flutter build apk --release
+Copy-Item build\app\outputs\flutter-apk\app-release.apk releases\qiwalo.apk -Force
 
 # أو نسخة Mock ثابتة بدون شبكة:
-flutter build apk --debug --dart-define=USE_MOCK=true
-Copy-Item build\app\outputs\flutter-apk\app-debug.apk releases\qiwalo.apk -Force
+flutter build apk --release --dart-define=USE_MOCK=true
+Copy-Item build\app\outputs\flutter-apk\app-release.apk releases\qiwalo.apk -Force
 
 # أو اختبار من موبايل على نفس الواي فاي (استبدل الـ IP بعنوان الكمبيوتر):
-flutter build apk --debug --dart-define=API_BASE_URL=http://192.168.1.5:3130
-Copy-Item build\app\outputs\flutter-apk\app-debug.apk releases\qiwalo.apk -Force
+flutter build apk --release --dart-define=API_BASE_URL=http://192.168.1.5:3130
+Copy-Item build\app\outputs\flutter-apk\app-release.apk releases\qiwalo.apk -Force
 ```
+
+لو الملف `android/key.properties` مش موجود، البناء هيستخدم التوقيع الافتراضي؛ راجع `docs/RELEASE-SIGNING.md` قبل التوزيع.
 
 ولو احتجت تغيّر الأيقونة: عدّل `tools/make_icons.py` وشغّل `python tools/make_icons.py` قبل بناء الـ APK.
 

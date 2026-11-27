@@ -8,8 +8,8 @@
    ```powershell
    flutter analyze
    flutter test
-   flutter build apk --debug
-   Copy-Item build\app\outputs\flutter-apk\app-debug.apk releases\qiwalo.apk -Force
+   flutter build apk --release
+   Copy-Item build\app\outputs\flutter-apk\app-release.apk releases\qiwalo.apk -Force
    ```
 2. إعادة توليد لقطات Pixel 7 لو فيه تغيير واجهة.
 3. رفع الكود على `main` في `3m-code-software/qiwalo-mobile`.
@@ -32,5 +32,6 @@
 | `mobile-v1.2.4` | تحسينات إنشاء الحساب: كود دولة تلقائي من منطقة الجهاز + قائمة دول، تلميح للاسم الكامل، مؤشر قوة الباسورد مع إظهار/إخفاء، والشروط والأحكام بتفتح داخل الشاشة عبر bottom sheet. ١٤ اختباراً. |
 | `mobile-v1.2.5` | تسجيل الدخول بقى يقبل الإيميل أو رقم التليفون المسجّل، مع إظهار/إخفاء ومؤشر قوة للباسورد (نفس منطق الإنشاء). ١٥ اختباراً. دخول الضيف لسه واجهة معاينة لحين عمل BFF خاص به. |
 | `mobile-v1.2.6` | خلفية شاشة الترحيب بقت صورة حقيقية للنيل في الأقصر مع طبقة كحلي متدرّجة وتكبير بطيء ٢٤ ثانية؛ شيلنا الجزيئات والموجات العشوائية. أضفنا ملف إسناد الترخيص. ١٥ اختباراً. |
+| `mobile-v1.2.7` | أول APK موقّع Release بدل debug: Keystore محلي + `signingConfigs` في Gradle + توثيق النسخ الاحتياطي و secrets الـ CI، وإضافة workflow يعمل analyze/test/build APK ويصنّع التوقيع عند توفر الأسرار. ١٥ اختباراً. |
 
 > التوقيع Release وإشعارات Push لسه مؤجّلة لطلب صريح. شاشات المالك/السائق مرتبطة بـ BFF الأدوار، لكن قبول/رفض طلبات الحجز لسه للقراءة فقط لأن الحجوزات بتتأكد تلقائياً. الـ APK الحالي debug وموقّع بالتطوير؛ يمكن تثبيته مباشرة على أندرويد ويُوزّع عبر رابط الـ Release.
