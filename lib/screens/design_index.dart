@@ -50,7 +50,7 @@ class DesignIndexScreen extends StatelessWidget {
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(color: gold.withValues(alpha: 0.16), borderRadius: BorderRadius.circular(14)),
             child: const Text(
-              'معاينة للشكل وتجربة المستخدم. صفحة الوحدة والحجز بيقروا بيانات حقيقية من BFF، مع نسخة محلية تظهر لو الخادم مش متاح. شاشات المالك والسائق (١٧–٢٤) معاينة محلية لحد ما يبقى ليها BFF.',
+              'معاينة للشكل وتجربة المستخدم. صفحة الوحدة والحجز وشاشات المالك والسائق (١٧–٢٤) بيقروا بيانات حقيقية من BFF بعد تسجيل الدخول للأدوار. نسخة محلية معلَّمة تظهر لو الخادم مش متاح في صفحة الوحدة.',
               style: TextStyle(color: ink, height: 1.6),
             ),
           ),

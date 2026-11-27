@@ -10,7 +10,7 @@ class OnboardingScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: navy,
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -39,7 +39,7 @@ class OnboardingScreen extends StatelessWidget {
               _feature(Icons.search_rounded, 'ابحث', 'وحدات بأسعار واضحة وتوافر محدّث'),
               _feature(Icons.terrain_rounded, 'خطّط', 'سفاري ونقل وباقات في مكان واحد'),
               _feature(Icons.support_agent_rounded, 'تواصل', 'دعم عربي على مدار اليوم'),
-              const Spacer(),
+              const SizedBox(height: 24),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(backgroundColor: gold, foregroundColor: navy),
                 onPressed: () => Navigator.pushNamed(context, '/signup'),
@@ -49,6 +49,13 @@ class OnboardingScreen extends StatelessWidget {
               TextButton(
                 onPressed: () => Navigator.pushNamed(context, '/login'),
                 child: const Text('عندي حساب · دخول', style: TextStyle(color: Colors.white)),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pushNamed(context, '/design'),
+                child: const Text(
+                  'معاينة كل الشاشات',
+                  style: TextStyle(color: Color(0xFFC7D2DF), fontSize: 12),
+                ),
               ),
             ],
           ),

@@ -8,6 +8,7 @@ import 'package:qiwalo_app/api/api_client.dart';
 import 'package:qiwalo_app/api/role_repository.dart';
 import 'package:qiwalo_app/api/unit_repository.dart';
 import 'package:qiwalo_app/main.dart';
+import 'package:qiwalo_app/screens/design_index.dart';
 import 'package:qiwalo_app/owner_driver_data.dart';
 import 'package:qiwalo_app/screens/discover.dart';
 import 'package:qiwalo_app/screens/owner_driver.dart';
@@ -61,8 +62,17 @@ Map<String, dynamic> _apiBody() => {
     };
 
 void main() {
-  testWidgets('معاينة التصميم تعرض فهرس الشاشات الأربعة والعشرين', (tester) async {
+  testWidgets('شاشة الترحيب هي أول شاشة عند فتح التطبيق', (tester) async {
     await tester.pumpWidget(const QiwaloApp());
+    expect(find.text('إقامتك وتجاربك في الأقصر وأسوان'), findsOneWidget);
+    expect(find.text('ابدأ الآن'), findsOneWidget);
+    expect(find.text('عندي حساب · دخول'), findsOneWidget);
+    expect(find.text('معاينة كل الشاشات'), findsOneWidget);
+    expect(find.text('كل الشاشات · ٢٤'), findsNothing);
+  });
+
+  testWidgets('فهرس المراجعة لسه بيعرض الشاشات الأربعة والعشرين', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: DesignIndexScreen()));
     expect(find.text('كل الشاشات · ٢٤'), findsOneWidget);
     expect(find.text('١٦ · المساعدة والشروط'), findsOneWidget);
     expect(find.text('١٧ · لوحة المالك'), findsOneWidget);
@@ -71,7 +81,7 @@ void main() {
 
   testWidgets('الاتجاه RTL مفروض على كل التطبيق', (tester) async {
     await tester.pumpWidget(const QiwaloApp());
-    final direction = Directionality.of(tester.element(find.text('كل الشاشات · ٢٤')));
+    final direction = Directionality.of(tester.element(find.text('قيوالو')));
     expect(direction, TextDirection.rtl);
   });
 

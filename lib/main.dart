@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'api/booking_repository.dart';
 import 'owner_driver_data.dart';
@@ -26,7 +27,8 @@ class QiwaloApp extends StatelessWidget {
         textDirection: TextDirection.rtl,
         child: child!,
       ),
-      initialRoute: '/design',
+      // أندرويد يبدأ بالترحيب؛ بناء الويب أداة تصوير فقط فيبدأ بفهرس المراجعة.
+      initialRoute: kIsWeb ? '/design' : '/onboarding',
       onGenerateRoute: (settings) {
         switch (settings.name) {
           case '/unit':
