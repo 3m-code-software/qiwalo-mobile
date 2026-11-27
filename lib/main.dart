@@ -5,6 +5,7 @@ import 'owner_driver_data.dart';
 import 'screens/account.dart';
 import 'screens/auth.dart';
 import 'screens/booking.dart';
+import 'screens/contact.dart';
 import 'screens/design_index.dart';
 import 'screens/discover.dart';
 import 'screens/owner_driver.dart';
@@ -133,6 +134,7 @@ class QiwaloApp extends StatelessWidget {
         '/favorites': (_) => const FavoritesScreen(),
         '/profile': (_) => const ProfileScreen(),
         '/help': (_) => const HelpScreen(),
+        '/contact': (_) => const ContactScreen(),
         '/owner-dashboard': (_) => RoleDataGate(
               role: 'OWNER',
               title: 'لوحة المالك',

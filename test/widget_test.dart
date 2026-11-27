@@ -75,12 +75,28 @@ void main() {
     expect(find.text('قيوالو'), findsOneWidget);
   });
 
-  testWidgets('فهرس المراجعة لسه بيعرض الشاشات الأربعة والعشرين', (tester) async {
+  testWidgets('فهرس المراجعة لسه بيعرض الشاشات الخمس والعشرين', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: DesignIndexScreen()));
-    expect(find.text('كل الشاشات · ٢٤'), findsOneWidget);
+    expect(find.text('كل الشاشات · ٢٥'), findsOneWidget);
     expect(find.text('١٦ · المساعدة والشروط'), findsOneWidget);
     expect(find.text('١٧ · لوحة المالك'), findsOneWidget);
     expect(find.text('٢٤ · المركبة والملف'), findsOneWidget);
+    expect(find.text('٢٥ · التواصل الداخلي'), findsOneWidget);
+  });
+
+  testWidgets('ضغط تواصل في الترحيب يفتح صفحة التواصل الداخلي', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(412, 1400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(const QiwaloApp());
+    await tester.tap(find.text('تواصل'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text('تواصل معنا'), findsOneWidget);
+    expect(find.text('فريق قيوالو جاهز للمساعدة'), findsOneWidget);
+    expect(find.text('اكتب رسالتك'), findsOneWidget);
+    expect(find.text('إرسال عبر واتساب'), findsOneWidget);
+    expect(find.text('إرسال عبر تليجرام'), findsOneWidget);
   });
 
   testWidgets('الاتجاه RTL مفروض على كل التطبيق', (tester) async {

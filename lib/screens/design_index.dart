@@ -34,6 +34,7 @@ const List<_Entry> _entries = [
   _Entry('/driver-trips', '٢٢ · الرحلات المتاحة', Icons.route_rounded),
   _Entry('/driver-trip-detail', '٢٣ · تفاصيل الرحلة', Icons.map_rounded),
   _Entry('/driver-vehicle', '٢٤ · المركبة والملف', Icons.directions_car_rounded),
+  _Entry('/contact', '٢٥ · التواصل الداخلي', Icons.support_agent_rounded),
 ];
 
 class DesignIndexScreen extends StatelessWidget {
@@ -42,7 +43,7 @@ class DesignIndexScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppShell(
-      title: 'كل الشاشات · ٢٤',
+      title: 'كل الشاشات · ٢٥',
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

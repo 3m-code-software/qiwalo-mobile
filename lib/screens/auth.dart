@@ -73,9 +73,24 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                     style: TextStyle(color: gold, fontSize: 16),
                   ),
                   const SizedBox(height: 36),
-                  _feature(Icons.search_rounded, 'ابحث', 'وحدات بأسعار واضحة وتوافر محدّث'),
-                  _feature(Icons.terrain_rounded, 'خطّط', 'سفاري ونقل وباقات في مكان واحد'),
-                  _feature(Icons.support_agent_rounded, 'تواصل', 'دعم عربي على مدار اليوم'),
+                  _feature(
+                    Icons.search_rounded,
+                    'ابحث',
+                    'وحدات بأسعار واضحة وتوافر محدّث',
+                    () => Navigator.pushNamed(context, '/home'),
+                  ),
+                  _feature(
+                    Icons.terrain_rounded,
+                    'خطّط',
+                    'سفاري ونقل وباقات في مكان واحد',
+                    () => Navigator.pushNamed(context, '/home'),
+                  ),
+                  _feature(
+                    Icons.support_agent_rounded,
+                    'تواصل',
+                    'دعم عربي على مدار اليوم',
+                    () => Navigator.pushNamed(context, '/contact'),
+                  ),
                   const SizedBox(height: 24),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(backgroundColor: gold, foregroundColor: navy),
@@ -103,27 +118,32 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     );
   }
 
-  Widget _feature(IconData icon, String title, String subtitle) {
+  Widget _feature(IconData icon, String title, String subtitle, VoidCallback onTap) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 18),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: navyLight, borderRadius: BorderRadius.circular(14)),
-            child: Icon(icon, color: gold),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                Text(subtitle, style: const TextStyle(color: Color(0xFFC7D2DF))),
-              ],
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: navyLight, borderRadius: BorderRadius.circular(14)),
+              child: Icon(icon, color: gold),
             ),
-          ),
-        ],
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                  Text(subtitle, style: const TextStyle(color: Color(0xFFC7D2DF))),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_back_ios_new_rounded, color: gold, size: 15),
+          ],
+        ),
       ),
     );
   }
