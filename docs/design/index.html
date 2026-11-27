@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>قيوالو — مراجعة تصميم الموبايل</title>
+  <style>
+    body { margin: 0; font-family: Tahoma, Arial, sans-serif; background: #f7f3ea; color: #17212b; }
+    header { background: #0b2341; color: #fff; padding: 24px; }
+    header h1 { margin: 0 0 6px; font-size: 26px; }
+    header p { margin: 0; color: #c9a227; }
+    main { max-width: 1180px; margin: auto; padding: 20px; }
+    .note { background: #fff; border: 1px solid #e3ded3; border-radius: 12px; padding: 14px; line-height: 1.8; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; margin-top: 22px; }
+    .card { background: #fff; border: 1px solid #e3ded3; border-radius: 16px; overflow: hidden; }
+    .card b { display: block; padding: 10px 14px; font-size: 15px; }
+    .card img { display: block; width: 100%; height: auto; background: #0b2341; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>قيوالو — مراجعة تصميم الموبايل</h1>
+    <p>تطبيق Flutter للأندرويد · ١٦ شاشة على مقاس Pixel 7 (412×915)</p>
+  </header>
+  <main>
+    <p class="note">
+      التصميم ده لموبايل أندرويد، مش ديسكتوب. النسخة الويب اللي انت عندك موجودة في <code>qiwalo-fresh</code> وما اتغيرتش.
+      ملف التثبيت: <code>releases/qiwalo.apk</code> — اسمه على الموبايل «قيوالو» بأيقونة ذهبية. اتبع <code>docs/INSTALL-ANDROID.md</code>.
+      استخدمنا بناء Flutter web بس كوسيلة سريعة لتصوير الشاشات على مقاس الموبايل من غير ما نحتاج جهاز/إيموليتر.
+      فيه ورقتين إضافيتين: فلاتر البحث من الشاشة ٦، وتقويم التوافر من الشاشة ٧ (موجودة كصور مستقلة كمان).
+      لقطة صفحة الوحدة اتولّدت ببناء <code>USE_MOCK=true</code> عشان تظهر البيانات من غير اعتماد على الشبكة.
+    </p>
+    <div class="grid" id="screens"></div>
+  </main>
+  <script>
+    const names = [
+      ['design', 'فهرس الشاشات'], ['onboarding', '١ · الترحيب'], ['login', '٢ · الدخول'],
+      ['signup', '٣ · إنشاء حساب'], ['telegram', '٤ · تفعيل تليجرام'], ['recovery', '٥ · استعادة الباسورد'],
+      ['home', '٦ · الرئيسية والبحث'], ['filters', '٦ب · ورقة الفلاتر'], ['unit', '٧ · صفحة الوحدة'], ['calendar', '٧ب · ورقة التوافر'], ['gallery', '٨ · معرض الصور'],
+      ['checkout', '٩ · بيانات الضيف'], ['payment', '١٠ · طريقة الدفع'], ['success', '١١ · نجاح الحجز'],
+      ['bookings', '١٢ · حجوزاتي'], ['booking-detail', '١٣ · تفاصيل الحجز'], ['favorites', '١٤ · المفضلة'],
+      ['profile', '١٥ · الملف الشخصي'], ['help', '١٦ · المساعدة والشروط'],
+    ];
+    document.getElementById('screens').innerHTML = names.map(([file, label]) =>
+      `<div class="card"><b>${label}</b><a href="pixel7/${file}.png" target="_blank"><img src="pixel7/${file}.png" alt="${label}" loading="lazy"></a></div>`
+    ).join('');
+  </script>
+</body>
+</html>

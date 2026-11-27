@@ -1,0 +1,73 @@
+import 'unit_repository.dart';
+
+/// نسخة محلية بنفس شكل استجابة BFF، تُستخدم للعرض لما الخادم مش متاح.
+/// الصور والتقييمات مأخوذة من بيانات Mock الموجودة في qiwalo-fresh.
+const UnitDetail mockUnitDetail = UnitDetail(
+  slug: 'nile-view-dar-al-madina',
+  name: 'دار المدينة بإطلالة على النيل',
+  host: 'محمد مالك',
+  typeAr: 'شقة',
+  cityAr: 'الأقصر',
+  address: 'شارع الكورنيش، الأقصر الشرقية',
+  description:
+      'شقة مريحة ومفروشة بالكامل في قلب الأقصر، دقائق من الكرنك ووادي الملوك، مع تراس بإطلالة مباشرة على النيل.',
+  images: [
+    'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80',
+    'https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=1200&q=80',
+    'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1200&q=80',
+  ],
+  amenities: [
+    'واي فاي',
+    'مكيف',
+    'مطبخ',
+    'تراس',
+    'إطلالة على النيل',
+    'موقف سيارة',
+  ],
+  maxGuests: 5,
+  bedrooms: 2,
+  bathrooms: 2,
+  areaSqm: 110,
+  basePrice: 1450,
+  currency: 'EGP',
+  rating: 4.8,
+  reviewCount: 34,
+  cancellation: 'إلغاء مجاني قبل الوصول بـ 48 ساعة أو أكثر. بعد ذلك تُحتسب ليلة واحدة كغرامة إلغاء. عدم الحضور يُعامل كإلغاء في يوم الوصول.',
+  houseRules:
+      'لا تدخين داخل الوحدة · تسليم المفاتيح من 14:00 · المغادرة قبل 12:00',
+  lat: 25.6872,
+  lng: 32.6396,
+  reviews: [
+    UnitReview(
+      rating: 5,
+      comment: 'الإطلالة على النيل رائعة والشقة نظيفة جداً. تعامل المالك كان سلساً من أول لحظة.',
+      guestName: 'سارة مسافر',
+      createdAt: '2026-11-20T10:00:00.000Z',
+      ownerReply: 'شكراً لثقتكم، ويسعدنا استقبالكم مجدداً في أي وقت.',
+    ),
+    UnitReview(
+      rating: 4,
+      comment: 'موقع ممتاز وقريب من الكرنك. أتمنى إضافة مظلة للتراس.',
+      guestName: 'أحمد رحّال',
+      createdAt: '2026-11-12T10:00:00.000Z',
+    ),
+  ],
+  availability: [
+    AvailabilityDay(date: '2026-11-26', isBlocked: false),
+    AvailabilityDay(date: '2026-11-27', isBlocked: false, priceOverride: 1550),
+    AvailabilityDay(date: '2026-11-28', isBlocked: true),
+    AvailabilityDay(date: '2026-11-29', isBlocked: false),
+    AvailabilityDay(date: '2026-11-30', isBlocked: false),
+    AvailabilityDay(date: '2026-12-01', isBlocked: false, priceOverride: 1600),
+    AvailabilityDay(date: '2026-12-02', isBlocked: false),
+  ],
+  priceRules: [
+    PriceRuleInfo(name: 'موسم الأعياد', price: 1600, minNights: 3),
+  ],
+  pagePath: '/stay/nile-view-dar-al-madina',
+  supportPhone: '01066094050',
+  whatsapp: 'https://wa.me/201066094050',
+  telegram: 'https://t.me/+201066094050',
+  paymentCopy: 'تحويل بنكي أو كاش عند الوصول',
+  fromMock: true,
+);

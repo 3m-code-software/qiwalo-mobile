@@ -1,0 +1,65 @@
+# تثبيت نسخة قيوالو على أندرويد
+
+الملف: `K:\qiwalo\qiwalo-flutter\releases\qiwalo.apk`
+اسم التطبيق بعد التثبيت: **قيوالو** · الأيقونة: دائرة ذهبية بحرف «ق» على خلفية كحلية.
+معرّف الحزمة: `com.qiwalo.app` — وبالتالي بينثبّت جنب الـ APK القديم من غير تعارض.
+
+> النسخة دي فيها ١٦ شاشة + ورقتين. **صفحة الوحدة والحجز** بيجروا بيانات حقيقية من BFF (التفاصيل، التسعير، التأكيد، رقم المرجع)، والباقي معاينة واجهة. لو الخادم مش متاح بتظهر نسخة محلية معلَّمة بـ «معاينة محلية».
+
+## الطريقة ١ — بالكابل (الأسرع والأضمن)
+
+1. على الموبايل: **الإعدادات ← عن الهاتف ← اضغط «رقم البناء» ٧ مرات** لحد ما يظهر «خيارات المطوّر».
+2. افتح **خيارات المطوّر** وفعّل **تصحيح USB (USB debugging)**.
+3. وصّل الموبايل بالكمبيوتر بكابل USB واختر **نقل ملفات (MTP)**، ووافق على إشعار «السماح بتصحيح USB».
+4. في PowerShell على الكمبيوتر:
+   ```powershell
+   C:\Users\musta\AppData\Local\Android\Sdk\platform-tools\adb.exe devices
+   ```
+   لازم تشوف رقم جهاز تحت كلمة `List of devices attached`. لو فاضية، راجع الخطوة ٢ و٣.
+5. ثبّت:
+   ```powershell
+   C:\Users\musta\AppData\Local\Android\Sdk\platform-tools\adb.exe install -r "K:\qiwalo\qiwalo-flutter\releases\qiwalo.apk"
+   ```
+6. افتح «قيوالو» من قائمة التطبيقات. أول شاشة هي فهرس الشاشات؛ اضغط أي شاشة للمراجعة.
+
+## الطريقة ٢ — من غير كابل
+
+1. انقل الملف `qiwalo.apk` للموبايل بأي طريقة: Google Drive / تليجرام / واتساب / USB.
+   (الحجم حوالي ١٥٠ ميجابايت، فـ Drive أو USB أفضل من واتساب عشان الضغط).
+2. من مجلد **التحميلات** على الموبايل افتح `qiwalo.apk`.
+3. لو ظهر تنبيه **«تثبيت تطبيقات من مصادر غير معروفة»**، وافق واسمح للتطبيق اللي فاتح الملف (الملفات/المتصفح/تليجرام).
+4. اضغط **تثبيت** وانتظر، ثم افتح التطبيق.
+
+## حتى لو حصلت مشكلة
+
+| المشكلة | الحل |
+|---|---|
+| `adb devices` فاضية | فعّل تصحيح USB ووافق على إشعار الكمبيوتر، أو جرّب كابل تاني |
+| `INSTALL_FAILED_UPDATE_INCOMPATIBLE` | لأن الحزمة مختلفة (`com.qiwalo.app`)، امسح أي نسخة قديمة تجريبية بنفس الاسم وكرّر |
+| «التطبيق لا يعمل على جهازك» | استخدم أندرويد حديث (النسخة مبنية على SDK 36) |
+| الأيقونة أو الاسم هما القدام | امسح التطبيق وثبّت من جديد، أو `adb install -r` |
+| مفيش شبكة | صفحة الوحدة تفتح فوراً بنسخة محلية عليها «معاينة محلية» — الشاشة مش بتفضل فاضية |
+| الحجز في وضع المعاينة | Checkout وشاشة النجاح بيعرضوا تنبيه «معاينة محلية»؛ رقم الحجز المعروض تجريبي ومفيش حجز حقيقي اتعمل |
+
+## إعادة توليد الملف بعد أي تعديل على التصميم
+
+```powershell
+cd K:\qiwalo\qiwalo-flutter
+# Afتراضي: BFF المنشور https://qiwalo-ygzh.vercel.app
+flutter build apk --debug
+Copy-Item build\app\outputs\flutter-apk\app-debug.apk releases\qiwalo.apk -Force
+
+# أو نسخة Mock ثابتة بدون شبكة:
+flutter build apk --debug --dart-define=USE_MOCK=true
+Copy-Item build\app\outputs\flutter-apk\app-debug.apk releases\qiwalo.apk -Force
+
+# أو اختبار من موبايل على نفس الواي فاي (استبدل الـ IP بعنوان الكمبيوتر):
+flutter build apk --debug --dart-define=API_BASE_URL=http://192.168.1.5:3130
+Copy-Item build\app\outputs\flutter-apk\app-debug.apk releases\qiwalo.apk -Force
+```
+
+ولو احتجت تغيّر الأيقونة: عدّل `tools/make_icons.py` وشغّل `python tools/make_icons.py` قبل بناء الـ APK.
+
+---
+
+**ملاحظة:** الويب بتاعك في `qiwalo-fresh` والملف القديم `public/downloads/qiwalo.apk` ما اتغيروش.
