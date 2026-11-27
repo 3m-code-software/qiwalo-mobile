@@ -13,6 +13,9 @@ class BookingDraft {
     required this.checkOut,
     this.guests = 2,
     this.maxGuests = 5,
+    this.packageId,
+    this.experienceId,
+    this.transportId,
   });
 
   final String slug;
@@ -22,6 +25,9 @@ class BookingDraft {
   final String checkOut;
   final int guests;
   final int maxGuests;
+  final String? packageId;
+  final String? experienceId;
+  final String? transportId;
 
   BookingDraft copyWith({
     String? checkIn,
@@ -36,7 +42,34 @@ class BookingDraft {
         checkOut: checkOut ?? this.checkOut,
         guests: guests ?? this.guests,
         maxGuests: maxGuests,
+        packageId: packageId,
+        experienceId: experienceId,
+        transportId: transportId,
       );
+
+  /// شاشة الوحدة تختار الإضافات؛ الـ draft بيحمل المعرّفات فقط لا الأسعار.
+  BookingDraft withAddOns({
+    String? packageId,
+    String? experienceId,
+    String? transportId,
+  }) =>
+      BookingDraft(
+        slug: slug,
+        unitName: unitName,
+        cityAr: cityAr,
+        checkIn: checkIn,
+        checkOut: checkOut,
+        guests: guests,
+        maxGuests: maxGuests,
+        packageId: packageId,
+        experienceId: experienceId,
+        transportId: transportId,
+      );
+
+  bool get hasAddOns =>
+      (packageId?.isNotEmpty ?? false) ||
+      (experienceId?.isNotEmpty ?? false) ||
+      (transportId?.isNotEmpty ?? false);
 }
 
 class QuoteNight {
@@ -259,6 +292,9 @@ class BookingRepository {
     required String checkIn,
     required String checkOut,
     required int guests,
+    String? packageId,
+    String? experienceId,
+    String? transportId,
   }) async {
     if (useMock) return BookingQuote.preview;
     final body = await effectiveClient.postMap('/api/mobile/bookings/quote', body: {
@@ -266,6 +302,9 @@ class BookingRepository {
       'checkIn': checkIn,
       'checkOut': checkOut,
       'guests': guests,
+      if (packageId != null && packageId.isNotEmpty) 'packageId': packageId,
+      if (experienceId != null && experienceId.isNotEmpty) 'experienceId': experienceId,
+      if (transportId != null && transportId.isNotEmpty) 'transportId': transportId,
     });
     if (body['ok'] != true) {
       throw ApiException(_note(body, fallback: 'تعذّر حساب السعر'));
@@ -295,6 +334,12 @@ class BookingRepository {
         'checkIn': draft.checkIn,
         'checkOut': draft.checkOut,
         'guests': draft.guests,
+        if (draft.packageId != null && draft.packageId!.isNotEmpty)
+          'packageId': draft.packageId,
+        if (draft.experienceId != null && draft.experienceId!.isNotEmpty)
+          'experienceId': draft.experienceId,
+        if (draft.transportId != null && draft.transportId!.isNotEmpty)
+          'transportId': draft.transportId,
         'fullName': fullName,
         'email': email,
         'phone': phone,

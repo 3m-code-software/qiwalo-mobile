@@ -17,24 +17,25 @@ const List<_Entry> _entries = [
   _Entry('/recovery', '٥ · استعادة الباسورد', Icons.key_rounded),
   _Entry('/home', '٦ · الرئيسية والبحث', Icons.home_rounded),
   _Entry('/unit', '٧ · صفحة الوحدة', Icons.apartment_rounded),
-  _Entry('/gallery', '٨ · معرض الصور', Icons.photo_library_rounded),
-  _Entry('/checkout', '٩ · بيانات الضيف', Icons.assignment_rounded),
-  _Entry('/payment', '١٠ · طريقة الدفع', Icons.payments_rounded),
-  _Entry('/success', '١١ · نجاح الحجز', Icons.check_circle_rounded),
-  _Entry('/bookings', '١٢ · حجوزاتي', Icons.receipt_long_rounded),
-  _Entry('/booking-detail', '١٣ · تفاصيل الحجز', Icons.description_rounded),
-  _Entry('/favorites', '١٤ · المفضلة', Icons.favorite_rounded),
-  _Entry('/profile', '١٥ · الملف الشخصي', Icons.person_rounded),
-  _Entry('/help', '١٦ · المساعدة والشروط', Icons.help_center_rounded),
-  _Entry('/owner-dashboard', '١٧ · لوحة المالك', Icons.dashboard_rounded),
-  _Entry('/owner-units', '١٨ · وحداتي', Icons.apartment_rounded),
-  _Entry('/owner-unit-form', '١٩ · إضافة/تعديل وحدة', Icons.edit_location_alt_rounded),
-  _Entry('/owner-bookings', '٢٠ · طلبات الحجز', Icons.event_note_rounded),
-  _Entry('/driver-dashboard', '٢١ · لوحة السائق', Icons.local_taxi_rounded),
-  _Entry('/driver-trips', '٢٢ · الرحلات المتاحة', Icons.route_rounded),
-  _Entry('/driver-trip-detail', '٢٣ · تفاصيل الرحلة', Icons.map_rounded),
-  _Entry('/driver-vehicle', '٢٤ · المركبة والملف', Icons.directions_car_rounded),
-  _Entry('/contact', '٢٥ · التواصل الداخلي', Icons.support_agent_rounded),
+  _Entry('/unit-map', '٨ · خريطة الوحدة', Icons.map_rounded),
+  _Entry('/gallery', '٩ · معرض الصور', Icons.photo_library_rounded),
+  _Entry('/checkout', '١٠ · بيانات الضيف', Icons.assignment_rounded),
+  _Entry('/payment', '١١ · طريقة الدفع', Icons.payments_rounded),
+  _Entry('/success', '١٢ · نجاح الحجز', Icons.check_circle_rounded),
+  _Entry('/bookings', '١٣ · حجوزاتي', Icons.receipt_long_rounded),
+  _Entry('/booking-detail', '١٤ · تفاصيل الحجز', Icons.description_rounded),
+  _Entry('/favorites', '١٥ · المفضلة', Icons.favorite_rounded),
+  _Entry('/profile', '١٦ · الملف الشخصي', Icons.person_rounded),
+  _Entry('/help', '١٧ · المساعدة والشروط', Icons.help_center_rounded),
+  _Entry('/owner-dashboard', '١٨ · لوحة المالك', Icons.dashboard_rounded),
+  _Entry('/owner-units', '١٩ · وحداتي', Icons.apartment_rounded),
+  _Entry('/owner-unit-form', '٢٠ · إضافة/تعديل وحدة', Icons.edit_location_alt_rounded),
+  _Entry('/owner-bookings', '٢١ · طلبات الحجز', Icons.event_note_rounded),
+  _Entry('/driver-dashboard', '٢٢ · لوحة السائق', Icons.local_taxi_rounded),
+  _Entry('/driver-trips', '٢٣ · الرحلات المتاحة', Icons.route_rounded),
+  _Entry('/driver-trip-detail', '٢٤ · تفاصيل الرحلة', Icons.map_rounded),
+  _Entry('/driver-vehicle', '٢٥ · المركبة والملف', Icons.directions_car_rounded),
+  _Entry('/contact', '٢٦ · التواصل الداخلي', Icons.support_agent_rounded),
 ];
 
 class DesignIndexScreen extends StatelessWidget {
@@ -43,7 +44,7 @@ class DesignIndexScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppShell(
-      title: 'كل الشاشات · ٢٥',
+      title: 'كل الشاشات · ٢٦',
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -51,12 +52,12 @@ class DesignIndexScreen extends StatelessWidget {
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(color: gold.withValues(alpha: 0.16), borderRadius: BorderRadius.circular(14)),
             child: const Text(
-              'معاينة للشكل وتجربة المستخدم. صفحة الوحدة والحجز وشاشات المالك والسائق (١٧–٢٤) بيقروا بيانات حقيقية من BFF بعد تسجيل الدخول للأدوار. نسخة محلية معلَّمة تظهر لو الخادم مش متاح في صفحة الوحدة.',
+              'معاينة للشكل وتجربة المستخدم. صفحة الوحدة والخريطة والحجز وشاشات المالك والسائق (١٨–٢٥) بيقروا بيانات حقيقية من BFF بعد تسجيل الدخول للأدوار. نسخة محلية معلَّمة تظهر لو الخادم مش متاح في صفحة الوحدة.',
               style: TextStyle(color: ink, height: 1.6),
             ),
           ),
           const SizedBox(height: 12),
-          const Text('ورقتان إضافيتان: فلاتر البحث – تقويم التوافر (من داخل الشاشات ٦ و٧).', style: TextStyle(color: muted, fontSize: 12)),
+          const Text('ورقتان إضافيتان: فلاتر البحث – تقويم التوافر (من داخل الشاشات ٦ و٧). الخريطة تستخدم OpenStreetMap بدون مفتاح API.', style: TextStyle(color: muted, fontSize: 12)),
           const SizedBox(height: 12),
           GridView.count(
             shrinkWrap: true,

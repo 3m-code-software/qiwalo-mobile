@@ -76,6 +76,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         checkIn: isoDate(_checkIn),
         checkOut: isoDate(_checkOut),
         guests: _guests,
+        packageId: widget.draft.packageId,
+        experienceId: widget.draft.experienceId,
+        transportId: widget.draft.transportId,
       );
       if (mounted) setState(() => _quote = quote);
     } catch (error) {

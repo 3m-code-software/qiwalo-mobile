@@ -41,6 +41,15 @@ class QiwaloApp extends StatelessWidget {
                     : null,
               ),
             );
+          case '/unit-map':
+            return MaterialPageRoute<dynamic>(
+              settings: settings,
+              builder: (_) => UnitMapScreen(
+                slug: settings.arguments is String
+                    ? settings.arguments as String
+                    : null,
+              ),
+            );
           case '/gallery':
             final images = settings.arguments;
             return MaterialPageRoute<dynamic>(

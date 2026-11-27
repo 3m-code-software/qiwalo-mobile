@@ -62,6 +62,53 @@ class PriceRuleInfo {
       );
 }
 
+/// إضافة قابلة للحجز جاية من `GET /api/mobile/units/[slug]`.
+/// التطبيق بيبعت `id` فقط للـ quote/الحجز؛ السعر بيتحسب على الخادم.
+class UnitAddOn {
+  const UnitAddOn({
+    required this.id,
+    required this.kind,
+    required this.label,
+    required this.subtitle,
+    required this.price,
+    required this.priceUnit,
+    required this.capacity,
+  });
+
+  final String id;
+  final String kind;
+  final String label;
+  final String subtitle;
+  final num price;
+  final String priceUnit;
+  final int capacity;
+
+  factory UnitAddOn.fromJson(Map<String, dynamic> json) => UnitAddOn(
+        id: _text(json['id']),
+        kind: _text(json['kind']),
+        label: _text(json['label']),
+        subtitle: _text(json['subtitle']),
+        price: (json['price'] as num?) ?? 0,
+        priceUnit: _text(json['priceUnit']),
+        capacity: _int(json['capacity']),
+      );
+
+  /// اسم الحقل اللي بيستقبل المعرّف في BFF الحجز.
+  String get requestField => switch (kind) {
+        'PACKAGE' => 'packageId',
+        'EXPERIENCE' => 'experienceId',
+        'TRANSPORT' => 'transportId',
+        _ => '',
+      };
+
+  String get priceLabel => switch (priceUnit) {
+        'night' => '/ ليلة',
+        'person' => '/ للشخص',
+        'trip' => '/ للرحلة',
+        _ => '',
+      };
+}
+
 class UnitDetail {
   const UnitDetail({
     required this.slug,
@@ -88,6 +135,7 @@ class UnitDetail {
     required this.reviews,
     required this.availability,
     required this.priceRules,
+    required this.addOns,
     required this.pagePath,
     required this.supportPhone,
     required this.whatsapp,
@@ -120,6 +168,7 @@ class UnitDetail {
   final List<UnitReview> reviews;
   final List<AvailabilityDay> availability;
   final List<PriceRuleInfo> priceRules;
+  final List<UnitAddOn> addOns;
   final String pagePath;
   final String supportPhone;
   final String whatsapp;
@@ -166,6 +215,10 @@ class UnitDetail {
           .whereType<Map>()
           .map((p) => PriceRuleInfo.fromJson(p.cast<String, dynamic>()))
           .toList(),
+      addOns: (json['addOns'] as List? ?? const [])
+          .whereType<Map>()
+          .map((a) => UnitAddOn.fromJson(a.cast<String, dynamic>()))
+          .toList(),
       pagePath: _text(json['pagePath']),
       supportPhone: _text(support['phone']),
       whatsapp: _text(support['whatsapp']),
@@ -199,6 +252,7 @@ class UnitDetail {
         reviews: reviews,
         availability: availability,
         priceRules: priceRules,
+        addOns: addOns,
         pagePath: pagePath,
         supportPhone: supportPhone,
         whatsapp: whatsapp,

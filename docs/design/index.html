@@ -20,7 +20,7 @@
 <body>
   <header>
     <h1>قيوالو — مراجعة تصميم الموبايل</h1>
-    <p>تطبيق Flutter للأندرويد · ١٦ شاشة على مقاس Pixel 7 (412×915)</p>
+    <p>تطبيق Flutter للأندرويد · ٢٦ شاشة + ورقتين على مقاس Pixel 7 (412×915)</p>
   </header>
   <main>
     <p class="note">
@@ -28,7 +28,7 @@
       ملف التثبيت: <code>releases/qiwalo.apk</code> — اسمه على الموبايل «قيوالو» بأيقونة ذهبية. اتبع <code>docs/INSTALL-ANDROID.md</code>.
       استخدمنا بناء Flutter web بس كوسيلة سريعة لتصوير الشاشات على مقاس الموبايل من غير ما نحتاج جهاز/إيموليتر.
       فيه ورقتين إضافيتين: فلاتر البحث من الشاشة ٦، وتقويم التوافر من الشاشة ٧ (موجودة كصور مستقلة كمان).
-      لقطة صفحة الوحدة اتولّدت ببناء <code>USE_MOCK=true</code> عشان تظهر البيانات من غير اعتماد على الشبكة.
+      لقطة صفحة الوحدة والخريطة اتولّدت ببناء <code>USE_MOCK=true</code> عشان تظهر البيانات من غير اعتماد على الشبكة. الخريطة من OpenStreetMap وإسنادها ظاهر داخل اللقطة.
     </p>
     <div class="grid" id="screens"></div>
   </main>
@@ -36,10 +36,16 @@
     const names = [
       ['design', 'فهرس الشاشات'], ['onboarding', '١ · الترحيب'], ['login', '٢ · الدخول'],
       ['signup', '٣ · إنشاء حساب'], ['telegram', '٤ · تفعيل تليجرام'], ['recovery', '٥ · استعادة الباسورد'],
-      ['home', '٦ · الرئيسية والبحث'], ['filters', '٦ب · ورقة الفلاتر'], ['unit', '٧ · صفحة الوحدة'], ['calendar', '٧ب · ورقة التوافر'], ['gallery', '٨ · معرض الصور'],
-      ['checkout', '٩ · بيانات الضيف'], ['payment', '١٠ · طريقة الدفع'], ['success', '١١ · نجاح الحجز'],
-      ['bookings', '١٢ · حجوزاتي'], ['booking-detail', '١٣ · تفاصيل الحجز'], ['favorites', '١٤ · المفضلة'],
-      ['profile', '١٥ · الملف الشخصي'], ['help', '١٦ · المساعدة والشروط'],
+      ['home', '٦ · الرئيسية والبحث'], ['filters', '٦ب · ورقة الفلاتر'], ['unit', '٧ · صفحة الوحدة'],
+      ['calendar', '٧ب · ورقة التوافر'], ['unit-map', '٨ · خريطة الوحدة'], ['gallery', '٩ · معرض الصور'],
+      ['checkout', '١٠ · بيانات الضيف'], ['payment', '١١ · طريقة الدفع'], ['success', '١٢ · نجاح الحجز'],
+      ['bookings', '١٣ · حجوزاتي'], ['booking-detail', '١٤ · تفاصيل الحجز'], ['favorites', '١٥ · المفضلة'],
+      ['profile', '١٦ · الملف الشخصي'], ['help', '١٧ · المساعدة والشروط'],
+      ['owner-dashboard', '١٨ · لوحة المالك'], ['owner-units', '١٩ · وحداتي'],
+      ['owner-unit-form', '٢٠ · إضافة/تعديل وحدة'], ['owner-bookings', '٢١ · طلبات الحجز'],
+      ['driver-dashboard', '٢٢ · لوحة السائق'], ['driver-trips', '٢٣ · الرحلات المتاحة'],
+      ['driver-trip-detail', '٢٤ · تفاصيل الرحلة'], ['driver-vehicle', '٢٥ · المركبة والملف'],
+      ['contact', '٢٦ · التواصل الداخلي'],
     ];
     document.getElementById('screens').innerHTML = names.map(([file, label]) =>
       `<div class="card"><b>${label}</b><a href="pixel7/${file}.png" target="_blank"><img src="pixel7/${file}.png" alt="${label}" loading="lazy"></a></div>`

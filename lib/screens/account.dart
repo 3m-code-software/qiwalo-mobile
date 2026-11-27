@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../api/api_client.dart';
 import '../api/booking_repository.dart';
+import '../api/favorite_repository.dart';
 import '../data.dart';
 import '../format.dart';
 import '../theme.dart';
@@ -213,8 +214,52 @@ class BookingDetailScreen extends StatelessWidget {
   }
 }
 
-class FavoritesScreen extends StatelessWidget {
-  const FavoritesScreen({super.key});
+class FavoritesScreen extends StatefulWidget {
+  const FavoritesScreen({
+    super.key,
+    FavoriteRepository? favorites,
+  }) : favorites = favorites ?? const FavoriteRepository();
+
+  final FavoriteRepository favorites;
+
+  @override
+  State<FavoritesScreen> createState() => _FavoritesScreenState();
+}
+
+class _FavoritesScreenState extends State<FavoritesScreen> {
+  List<String> _slugs = <String>[];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final slugs = await widget.favorites.load();
+    if (!mounted) return;
+    setState(() {
+      _slugs = slugs;
+      _loading = false;
+    });
+  }
+
+  Future<void> _remove(String slug) async {
+    await widget.favorites.remove(slug);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('تمت الإزالة من المفضلة')),
+    );
+    await _load();
+  }
+
+  Stay? _sample(String slug) {
+    for (final stay in sampleStays) {
+      if (stay.slug == slug) return stay;
+    }
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -226,7 +271,55 @@ class FavoritesScreen extends StatelessWidget {
         children: [
           const Text('الوحدات اللي حفظتها على هذا الجهاز.', style: TextStyle(color: muted)),
           const SizedBox(height: 12),
-          ...sampleStays.take(2).map((stay) => StayCard(stay: stay)),
+          if (_loading)
+            const Padding(
+              padding: EdgeInsets.all(40),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (_slugs.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: line),
+              ),
+              child: const Column(
+                children: [
+                  Icon(Icons.favorite_border_rounded, size: 38, color: navy),
+                  SizedBox(height: 8),
+                  Text(
+                    'لسه ما حفظت أي وحدة. اضغط زر القلب داخل صفحة الوحدة.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: muted),
+                  ),
+                ],
+              ),
+            )
+          else
+            ..._slugs.map((slug) {
+              final stay = _sample(slug);
+              return Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: ListTile(
+                  leading: Icon(stay?.icon ?? Icons.apartment_rounded, color: navy),
+                  title: Text(
+                    stay?.name ?? 'وحدة محفوظة',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(
+                    stay == null ? slug : '${stay.city} · ${stay.type}',
+                  ),
+                  onTap: () =>
+                      Navigator.pushNamed(context, '/unit', arguments: slug),
+                  trailing: IconButton(
+                    tooltip: 'إزالة من المفضلة',
+                    icon: const Icon(Icons.delete_outline_rounded, color: dangerRed),
+                    onPressed: () => _remove(slug),
+                  ),
+                ),
+              );
+            }),
           const SizedBox(height: 8),
           SecondaryButton(label: 'ابحث عن وحدات أخرى', onPressed: () => Navigator.pushNamed(context, '/home')),
         ],

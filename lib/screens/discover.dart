@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart' as geo;
+import 'package:url_launcher/url_launcher.dart';
+
 import '../api/booking_repository.dart';
+import '../api/favorite_repository.dart';
 import '../api/mock_data.dart';
 import '../api/unit_repository.dart';
 import '../data.dart';
 import '../format.dart';
 import '../theme.dart';
 import '../widgets.dart';
+import 'contact.dart' show supportPhone, supportTelegram, supportWhatsapp;
 
 const String defaultUnitSlug = 'nile-view-dar-al-madina';
 
@@ -247,10 +253,13 @@ class UnitScreen extends StatefulWidget {
     super.key,
     this.slug,
     UnitRepository? repository,
-  }) : repository = repository ?? const UnitRepository();
+    FavoriteRepository? favorites,
+  })  : repository = repository ?? const UnitRepository(),
+        favorites = favorites ?? const FavoriteRepository();
 
   final String? slug;
   final UnitRepository repository;
+  final FavoriteRepository favorites;
 
   @override
   State<UnitScreen> createState() => _UnitScreenState();
@@ -260,8 +269,13 @@ class _UnitScreenState extends State<UnitScreen> {
   late final String _slug;
   late final PageController _heroController;
   UnitDetail _unit = mockUnitDetail;
+  late BookingDraft _draft;
   int _heroPage = 0;
   bool _loading = true;
+  bool _favorite = false;
+  bool _favoriteTouched = false;
+  bool _showAllReviews = false;
+  final Set<String> _selectedAddOnIds = <String>{};
 
   @override
   void initState() {
@@ -269,8 +283,10 @@ class _UnitScreenState extends State<UnitScreen> {
     _slug = (widget.slug != null && widget.slug!.trim().isNotEmpty)
         ? widget.slug!.trim()
         : defaultUnitSlug;
+    _draft = _draftFor(_unit, _slug);
     _heroController = PageController();
     _loadUnit();
+    _loadFavorite();
   }
 
   Future<void> _loadUnit() async {
@@ -279,15 +295,90 @@ class _UnitScreenState extends State<UnitScreen> {
       if (!mounted) return;
       setState(() {
         _unit = unit;
+        _draft = _draftFor(unit, _slug).withAddOns();
         _loading = false;
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
         _unit = mockUnitDetail;
+        _draft = _draftFor(_unit, _slug).withAddOns();
         _loading = false;
       });
     }
+  }
+
+  Future<void> _loadFavorite() async {
+    final items = await widget.favorites.load();
+    if (!mounted || _favoriteTouched) return;
+    setState(() => _favorite = items.contains(_slug));
+  }
+
+  Future<void> _toggleFavorite() async {
+    _favoriteTouched = true;
+    final added = await widget.favorites.toggle(_slug);
+    if (!mounted) return;
+    setState(() => _favorite = added);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          added ? 'تمت الإضافة إلى المفضلة' : 'تمت الإزالة من المفضلة',
+        ),
+      ),
+    );
+  }
+
+  String? _addOnKind(String id) {
+    for (final addOn in _unit.addOns) {
+      if (addOn.id == id) return addOn.kind;
+    }
+    return null;
+  }
+
+  void _syncDraftAddOns() {
+    String? packageId;
+    String? experienceId;
+    String? transportId;
+    for (final id in _selectedAddOnIds) {
+      switch (_addOnKind(id)) {
+        case 'PACKAGE':
+          packageId = id;
+        case 'EXPERIENCE':
+          experienceId = id;
+        case 'TRANSPORT':
+          transportId = id;
+      }
+    }
+    _draft = _draft.withAddOns(
+      packageId: packageId,
+      experienceId: experienceId,
+      transportId: transportId,
+    );
+  }
+
+  void _toggleAddOn(UnitAddOn addOn) {
+    setState(() {
+      if (!_selectedAddOnIds.remove(addOn.id)) {
+        _selectedAddOnIds.add(addOn.id);
+        // الباقة بتضم سفاري ونقل، فما نجمعهاش مع إضافات منفصلة في نفس الحجز.
+        if (addOn.kind == 'PACKAGE') {
+          _selectedAddOnIds.removeWhere((id) => _addOnKind(id) != 'PACKAGE');
+        } else if (addOn.kind == 'EXPERIENCE' || addOn.kind == 'TRANSPORT') {
+          _selectedAddOnIds.removeWhere((id) => _addOnKind(id) == 'PACKAGE');
+        }
+      }
+      _syncDraftAddOns();
+    });
+  }
+
+  void _applyDates(DateTime checkIn, DateTime checkOut) {
+    if (!checkOut.isAfter(checkIn)) return;
+    setState(() {
+      _draft = _draft.copyWith(
+        checkIn: isoDate(checkIn),
+        checkOut: isoDate(checkOut),
+      );
+    });
   }
 
   @override
@@ -303,7 +394,7 @@ class _UnitScreenState extends State<UnitScreen> {
 
     return AppShell(
       title: 'تفاصيل الوحدة',
-      bottomBar: _BookingBar(price: '$nightPrice / ليلة', draft: _draftFor(unit, _slug)),
+      bottomBar: _BookingBar(price: '$nightPrice / ليلة', draft: _draft),
       body: ListView(
         padding: const EdgeInsets.only(bottom: 24),
         children: [
@@ -334,7 +425,16 @@ class _UnitScreenState extends State<UnitScreen> {
                         ),
                       ),
                     ),
-                    const Icon(Icons.favorite_border_rounded, color: navy),
+                    IconButton(
+                      tooltip: _favorite ? 'إزالة من المفضلة' : 'إضافة للمفضلة',
+                      onPressed: _toggleFavorite,
+                      icon: Icon(
+                        _favorite
+                            ? Icons.favorite_rounded
+                            : Icons.favorite_border_rounded,
+                        color: _favorite ? const Color(0xFFD2485B) : navy,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 6),
@@ -344,6 +444,22 @@ class _UnitScreenState extends State<UnitScreen> {
                       .join(' · '),
                   style: const TextStyle(color: muted),
                 ),
+                if (unit.address.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.place_outlined, size: 16, color: navy),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          unit.address,
+                          style: const TextStyle(color: muted, fontSize: 12),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
@@ -443,16 +559,30 @@ class _UnitScreenState extends State<UnitScreen> {
                     ],
                   ),
                 ),
+                const SectionTitle('الموقع'),
+                UnitMapCard(
+                  name: unit.name,
+                  address: unit.address,
+                  lat: unit.lat,
+                  lng: unit.lng,
+                ),
                 const SectionTitle('التوافر والأسعار'),
                 _WeekStrip(
                   availability: unit.availability,
                   basePrice: unit.basePrice,
+                  selectedCheckIn: _draft.checkIn,
+                  onSelect: _applyDates,
                 ),
+                InfoRow('الوصول', dateAr(_draft.checkIn)),
+                InfoRow('المغادرة', dateAr(_draft.checkOut)),
                 TextButton.icon(
                   onPressed: () => showCalendarSheet(
                     context,
                     availability: unit.availability,
                     basePrice: unit.basePrice,
+                    checkIn: _draft.checkIn,
+                    checkOut: _draft.checkOut,
+                    onApply: _applyDates,
                   ),
                   icon: const Icon(Icons.calendar_month_rounded),
                   label: const Text('عرض كل التواريخ'),
@@ -470,8 +600,23 @@ class _UnitScreenState extends State<UnitScreen> {
                 if (unit.reviews.isEmpty)
                   const Text('لا توجد تقييمات منشورة بعد.',
                       style: TextStyle(color: muted))
-                else
-                  ...unit.reviews.take(3).map(_ReviewTile.new),
+                else ...[
+                  ...(_showAllReviews
+                          ? unit.reviews
+                          : unit.reviews.take(3))
+                      .map(_ReviewTile.new),
+                  if (unit.reviews.length > 3)
+                    TextButton.icon(
+                      onPressed: () =>
+                          setState(() => _showAllReviews = !_showAllReviews),
+                      icon: Icon(_showAllReviews
+                          ? Icons.expand_less_rounded
+                          : Icons.expand_more_rounded),
+                      label: Text(_showAllReviews
+                          ? 'عرض أقل'
+                          : 'عرض كل التقييمات (${_ar(unit.reviews.length)})'),
+                    ),
+                ],
                 const SectionTitle('سياسة الإلغاء والقواعد'),
                 InfoRow('الإلغاء', unit.cancellation),
                 if (unit.houseRules.isNotEmpty) ...[
@@ -482,25 +627,59 @@ class _UnitScreenState extends State<UnitScreen> {
                 _ContactRow(
                   icon: Icons.call_outlined,
                   label: 'الهاتف',
-                  value: unit.supportPhone,
+                  value: unit.supportPhone.isEmpty
+                      ? supportPhone
+                      : unit.supportPhone,
+                  url: 'tel:${unit.supportPhone.isEmpty ? supportPhone : unit.supportPhone.replaceAll(RegExp(r'\s'), '')}',
                 ),
                 _ContactRow(
                   icon: Icons.chat_bubble_outline_rounded,
                   label: 'واتساب',
-                  value: unit.whatsapp,
+                  value: unit.whatsapp.isEmpty ? supportWhatsapp : unit.whatsapp,
+                  url: unit.whatsapp.isEmpty ? supportWhatsapp : unit.whatsapp,
                 ),
                 _ContactRow(
                   icon: Icons.send_outlined,
                   label: 'تيليجرام',
-                  value: unit.telegram,
+                  value: unit.telegram.isEmpty ? supportTelegram : unit.telegram,
+                  url: unit.telegram.isEmpty ? supportTelegram : unit.telegram,
                 ),
                 const SectionTitle('أضف إلى إقامتك'),
-                ...sampleServices.map((s) => _ServiceTile(service: s)),
+                if (unit.addOns.isEmpty)
+                  const Text('لا توجد إضافات متاحة لهذه الوحدة حالياً.',
+                      style: TextStyle(color: muted))
+                else ...[
+                  ...unit.addOns.map(
+                    (addOn) => _AddOnTile(
+                      addOn: addOn,
+                      selected: _selectedAddOnIds.contains(addOn.id),
+                      onTap: () => _toggleAddOn(addOn),
+                    ),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.only(top: 4),
+                    child: Text(
+                      'المعرّف فقط بيتبعت للحجز، والسعر النهائي بيحسبه الخادم.',
+                      style: TextStyle(color: muted, fontSize: 11),
+                    ),
+                  ),
+                ],
                 const SectionTitle('ملخص السعر'),
                 PriceBox(
                   lines: [
                     PriceLine('السعر للليلة', nightPrice),
                     PriceLine('العملة', unit.currency),
+                    ...unit.addOns
+                        .where((addOn) =>
+                            _selectedAddOnIds.contains(addOn.id))
+                        .map(
+                          (addOn) => PriceLine(
+                            addOn.label,
+                            '+ ${_money(addOn.price)} ${addOn.priceLabel}',
+                          ),
+                        ),
+                    if (_draft.hasAddOns)
+                      const PriceLine('الإجمالي النهائي', 'في صفحة الحجز'),
                   ],
                   total: nightPrice,
                 ),
@@ -661,36 +840,248 @@ class _ReviewTile extends StatelessWidget {
   }
 }
 
+Future<void> launchExternalLink(
+  BuildContext context,
+  String rawUrl, {
+  String errorText = 'ماقدرناش نفتح الرابط على الجهاز ده',
+}) async {
+  final uri = Uri.tryParse(rawUrl);
+  if (uri == null || !uri.hasScheme) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(errorText)));
+    }
+    return;
+  }
+  try {
+    if (!await canLaunchUrl(uri)) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(errorText)));
+      }
+      return;
+    }
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  } catch (_) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(errorText)),
+      );
+    }
+  }
+}
+
 class _ContactRow extends StatelessWidget {
   const _ContactRow({
     required this.icon,
     required this.label,
     required this.value,
+    required this.url,
   });
 
   final IconData icon;
   final String label;
   final String value;
+  final String url;
 
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 5),
-        child: Row(
+  Widget build(BuildContext context) => ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: Icon(icon, size: 18, color: navy),
+        title: Row(
           children: [
-            Icon(icon, size: 18, color: navy),
-            const SizedBox(width: 8),
             Text('$label: ', style: const TextStyle(color: muted)),
             Expanded(
               child: Text(
                 value,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.start,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
               ),
             ),
           ],
         ),
+        trailing: const Icon(Icons.open_in_new_rounded, size: 16, color: navy),
+        onTap: () => launchExternalLink(context, url),
       );
+}
+
+/// خريطة OpenStreetMap بدون مفتاح API، مع زر لفتح نفس الإحداثيات في خرائط جوجل.
+class UnitMapCard extends StatelessWidget {
+  const UnitMapCard({
+    super.key,
+    required this.name,
+    required this.address,
+    required this.lat,
+    required this.lng,
+  });
+
+  final String name;
+  final String address;
+  final num lat;
+  final num lng;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasPoint = lat != 0 && lng != 0;
+    if (!hasPoint) {
+      return const PlaceholderImage(
+        label: 'موقع الوحدة غير مسجل',
+        icon: Icons.map_outlined,
+        height: 180,
+      );
+    }
+    final center = geo.LatLng(lat.toDouble(), lng.toDouble());
+    final mapsUrl =
+        'https://www.google.com/maps/search/?api=1&query=${lat.toStringAsFixed(6)},${lng.toStringAsFixed(6)}';
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            height: 180,
+            child: FlutterMap(
+              options: MapOptions(
+                initialCenter: center,
+                initialZoom: 15,
+                minZoom: 3,
+                maxZoom: 19,
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate:
+                      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.qiwalo.app',
+                ),
+                MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: center,
+                      width: 44,
+                      height: 44,
+                      child: const Icon(
+                        Icons.place_rounded,
+                        color: navy,
+                        size: 40,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(12, 4, 12, 0),
+            child: Text(
+              '© OpenStreetMap contributors',
+              style: TextStyle(fontSize: 9, color: muted),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 6, 12, 2),
+            child: Text(
+              address.isEmpty ? name : address,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          TextButton.icon(
+            onPressed: () => launchExternalLink(
+              context,
+              mapsUrl,
+              errorText: 'ماقدرناش نفتح الخريطة على الجهاز ده',
+            ),
+            icon: const Icon(Icons.map_outlined),
+            label: const Text('افتح في خرائط جوجل'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// شاشة مراجعة مستقلة للخريطة، بتقرأ نفس بيانات BFF بتاعة صفحة الوحدة.
+class UnitMapScreen extends StatefulWidget {
+  const UnitMapScreen({
+    super.key,
+    this.slug,
+    UnitRepository? repository,
+  }) : repository = repository ?? const UnitRepository();
+
+  final String? slug;
+  final UnitRepository repository;
+
+  @override
+  State<UnitMapScreen> createState() => _UnitMapScreenState();
+}
+
+class _UnitMapScreenState extends State<UnitMapScreen> {
+  UnitDetail _unit = mockUnitDetail;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUnit();
+  }
+
+  Future<void> _loadUnit() async {
+    final slug = (widget.slug ?? '').trim();
+    try {
+      final unit = await widget.repository
+          .fetchUnit(slug.isEmpty ? defaultUnitSlug : slug);
+      if (!mounted) return;
+      setState(() {
+        _unit = unit;
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AppShell(
+      title: 'خريطة الوحدة',
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          if (_loading)
+            const Padding(
+              padding: EdgeInsets.all(40),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else ...[
+            Text(
+              _unit.name,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            if (_unit.fromMock)
+              const StatusChip('معاينة محلية', Colors.orange),
+            const SizedBox(height: 8),
+            UnitMapCard(
+              name: _unit.name,
+              address: _unit.address,
+              lat: _unit.lat,
+              lng: _unit.lng,
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'الخريطة من OpenStreetMap، والزر يفتح نفس الموقع في خرائط جوجل.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: muted, fontSize: 12),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
 }
 
 class _BookingBar extends StatelessWidget {
@@ -729,10 +1120,17 @@ class _BookingBar extends StatelessWidget {
 }
 
 class _WeekStrip extends StatelessWidget {
-  const _WeekStrip({required this.availability, required this.basePrice});
+  const _WeekStrip({
+    required this.availability,
+    required this.basePrice,
+    required this.selectedCheckIn,
+    required this.onSelect,
+  });
 
   final List<AvailabilityDay> availability;
   final num basePrice;
+  final String selectedCheckIn;
+  final void Function(DateTime checkIn, DateTime checkOut) onSelect;
 
   @override
   Widget build(BuildContext context) {
@@ -741,40 +1139,62 @@ class _WeekStrip extends StatelessWidget {
       return const Text('التوافر غير متاح حالياً.', style: TextStyle(color: muted));
     }
     return SizedBox(
-      height: 78,
+      height: 88,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: days.length,
         itemBuilder: (context, i) {
           final day = days[i];
+          final selected = day.date == selectedCheckIn;
           final price = day.priceOverride ?? basePrice;
           final parts = day.date.split('-');
           final dayNumber = parts.length == 3 ? parts[2] : day.date;
           final month = parts.length == 3
               ? _monthAr(int.tryParse(parts[1]) ?? 0)
               : '';
-          return Container(
-            width: 66,
-            margin: const EdgeInsets.only(left: 8),
-            decoration: BoxDecoration(
-              color: day.isBlocked ? const Color(0xFFEEEAE0) : Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: day.isBlocked ? line : navy),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  month.isEmpty ? _ar(dayNumber) : '$month ${_ar(dayNumber)}',
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+          return InkWell(
+            onTap: day.isBlocked
+                ? null
+                : () {
+                    final date = DateTime.tryParse(day.date);
+                    if (date != null) {
+                      onSelect(date, date.add(const Duration(days: 3)));
+                    }
+                  },
+            child: Container(
+              width: 66,
+              margin: const EdgeInsets.only(left: 8),
+              decoration: BoxDecoration(
+                color: selected
+                    ? gold.withValues(alpha: 0.24)
+                    : (day.isBlocked ? const Color(0xFFEEEAE0) : Colors.white),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: selected ? navy : (day.isBlocked ? line : navy),
+                  width: selected ? 2 : 1,
                 ),
-                Text(_money(price),
-                    style: TextStyle(
-                        fontSize: 10, color: day.isBlocked ? muted : navy)),
-                if (day.isBlocked)
-                  const Text('مغلق',
-                      style: TextStyle(fontSize: 9, color: dangerRed)),
-              ],
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    month.isEmpty ? _ar(dayNumber) : '$month ${_ar(dayNumber)}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(_money(price),
+                      style: TextStyle(
+                          fontSize: 10, color: day.isBlocked ? muted : navy)),
+                  if (selected)
+                    const Text('وصول',
+                        style: TextStyle(fontSize: 9, color: navy)),
+                  if (day.isBlocked && !selected)
+                    const Text('مغلق',
+                        style: TextStyle(fontSize: 9, color: dangerRed)),
+                ],
+              ),
             ),
           );
         },
@@ -798,19 +1218,42 @@ String _dateAr(String value) {
   return '${_ar(date.day)}/${_ar(date.month)}/${_ar(date.year)}';
 }
 
-class _ServiceTile extends StatelessWidget {
-  final ServiceOption service;
-  const _ServiceTile({required this.service});
+IconData _addOnIcon(String kind) => switch (kind) {
+      'PACKAGE' => Icons.all_inclusive_rounded,
+      'EXPERIENCE' => Icons.terrain_rounded,
+      'TRANSPORT' => Icons.directions_car_rounded,
+      _ => Icons.add_circle_outline_rounded,
+    };
+
+class _AddOnTile extends StatelessWidget {
+  const _AddOnTile({
+    required this.addOn,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final UnitAddOn addOn;
+  final bool selected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
-        leading: Icon(service.icon, color: navy),
-        title: Text(service.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(service.subtitle),
-        trailing: Text(service.price, style: const TextStyle(color: navy, fontWeight: FontWeight.bold, fontSize: 12)),
+        onTap: onTap,
+        leading: Icon(_addOnIcon(addOn.kind), color: navy),
+        title: Text(
+          addOn.label,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Text(
+          '${addOn.subtitle} · + ${_money(addOn.price)} ${addOn.priceLabel}',
+        ),
+        trailing: Icon(
+          selected ? Icons.check_circle_rounded : Icons.radio_button_unchecked,
+          color: selected ? successGreen : muted,
+        ),
       ),
     );
   }
@@ -820,6 +1263,9 @@ void showCalendarSheet(
   BuildContext context, {
   List<AvailabilityDay>? availability,
   num? basePrice,
+  String? checkIn,
+  String? checkOut,
+  void Function(DateTime checkIn, DateTime checkOut)? onApply,
 }) {
   showModalBottomSheet(
     context: context,
@@ -828,6 +1274,9 @@ void showCalendarSheet(
     builder: (context) => CalendarSheet(
       availability: availability,
       basePrice: basePrice,
+      checkIn: checkIn,
+      checkOut: checkOut,
+      onApply: onApply,
     ),
   );
 }
@@ -869,32 +1318,64 @@ class SheetPreview extends StatelessWidget {
 }
 
 class CalendarSheet extends StatefulWidget {
-  const CalendarSheet({super.key, this.availability, this.basePrice});
+  const CalendarSheet({
+    super.key,
+    this.availability,
+    this.basePrice,
+    this.checkIn,
+    this.checkOut,
+    this.onApply,
+  });
 
   final List<AvailabilityDay>? availability;
   final num? basePrice;
+  final String? checkIn;
+  final String? checkOut;
+  final void Function(DateTime checkIn, DateTime checkOut)? onApply;
 
   @override
   State<CalendarSheet> createState() => _CalendarSheetState();
 }
 
 class _CalendarSheetState extends State<CalendarSheet> {
-  int _selected = 0;
+  late DateTime _checkIn;
+  late DateTime _checkOut;
+
+  @override
+  void initState() {
+    super.initState();
+    final openDates = (widget.availability ?? const <AvailabilityDay>[])
+        .where((row) => !row.isBlocked)
+        .map((row) => DateTime.tryParse(row.date))
+        .whereType<DateTime>()
+        .toList()
+      ..sort();
+    final fallback = DateTime.now().add(const Duration(days: 5));
+    _checkIn = DateTime.tryParse(widget.checkIn ?? '') ??
+        (openDates.isEmpty ? fallback : openDates.first);
+    _checkOut = DateTime.tryParse(widget.checkOut ?? '') ??
+        _checkIn.add(const Duration(days: 3));
+    if (!_checkOut.isAfter(_checkIn)) {
+      _checkOut = _checkIn.add(const Duration(days: 3));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final rows = widget.availability;
-    final List<(String, String, bool)> days;
+    // كل صف من ٤ قيم: اليوم، السعر، مغلق، والتاريخ الأصلي للـ BFF.
+    final List<(String, String, bool, String?)> days;
     String title = 'مايو ٢٠٢٧';
 
     if (rows != null && rows.isNotEmpty) {
-      days = rows.take(7).map((row) {
+      days = rows.take(14).map((row) {
         final parts = row.date.split('-');
         final dayNumber = parts.length == 3 ? parts[2] : row.date;
         return (
           _ar(dayNumber),
           _money(row.priceOverride ?? widget.basePrice ?? 0),
           row.isBlocked,
+          row.date,
         );
       }).toList();
       final first = DateTime.tryParse(rows.first.date);
@@ -904,68 +1385,91 @@ class _CalendarSheetState extends State<CalendarSheet> {
     } else {
       // معاينة ثابتة لورقة التقويم في فهرس التصميم فقط.
       days = const [
-        ('٢٥', '١٬٤٥٠', false), ('٢٦', '١٬٤٥٠', false),
-        ('٢٧', '١٬٥٢٠', true), ('٢٨', '١٬٤٥٠', false),
-        ('٢٩', '١٬٤٥٠', false), ('٣٠', '١٬٦٠٠', true),
-        ('٣١', '١٬٤٥٠', false),
+        ('٢٥', '١٬٤٥٠', false, null), ('٢٦', '١٬٤٥٠', false, null),
+        ('٢٧', '١٬٥٢٠', true, null), ('٢٨', '١٬٤٥٠', false, null),
+        ('٢٩', '١٬٤٥٠', false, null), ('٣٠', '١٬٦٠٠', true, null),
+        ('٣١', '١٬٤٥٠', false, null),
       ];
     }
 
+    final hasDates = days.any((day) => day.$4 != null);
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(title, textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 14),
-          GridView.builder(
-            shrinkWrap: true,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 7, childAspectRatio: 0.85),
-            itemCount: days.length,
-            itemBuilder: (context, i) {
-              final day = days[i];
-              return InkWell(
-                onTap: day.$3 ? null : () => setState(() => _selected = i),
-                child: Container(
-                  margin: const EdgeInsets.all(2),
-                  decoration: BoxDecoration(
-                    color: _selected == i ? navy : (day.$3 ? const Color(0xFFEEEAE0) : Colors.white),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: line),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(title, textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 14),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 7, childAspectRatio: 0.7),
+              itemCount: days.length,
+              itemBuilder: (context, i) {
+                final day = days[i];
+                final isSelected = day.$4 != null && day.$4 == isoDate(_checkIn);
+                return InkWell(
+                  onTap: day.$3 || day.$4 == null
+                      ? null
+                      : () {
+                          final picked = DateTime.tryParse(day.$4!);
+                          if (picked == null) return;
+                          setState(() {
+                            _checkIn = picked;
+                            _checkOut = picked.add(const Duration(days: 3));
+                          });
+                        },
+                  child: Container(
+                    margin: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? navy
+                          : (day.$3
+                              ? const Color(0xFFEEEAE0)
+                              : Colors.white),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: line),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(day.$1, style: TextStyle(color: isSelected ? Colors.white : ink, fontWeight: FontWeight.bold)),
+                        Text(day.$2, style: TextStyle(fontSize: 8, color: isSelected ? Colors.white : muted)),
+                        if (isSelected)
+                          const Icon(Icons.check_rounded, size: 10, color: gold),
+                        if (day.$3) const Icon(Icons.block_rounded, size: 10, color: dangerRed),
+                      ],
+                    ),
                   ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(day.$1, style: TextStyle(color: _selected == i ? Colors.white : ink, fontWeight: FontWeight.bold)),
-                      Text(day.$2, style: TextStyle(fontSize: 8, color: _selected == i ? Colors.white : muted)),
-                      if (day.$3) const Icon(Icons.block_rounded, size: 10, color: dangerRed),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 12),
-          const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.block_rounded, size: 14, color: dangerRed),
-              Text(' يوم مغلق', style: TextStyle(fontSize: 12)),
-              SizedBox(width: 16),
-              Icon(Icons.check_circle_rounded, size: 14, color: successGreen),
-              Text(' متاح', style: TextStyle(fontSize: 12)),
-            ],
-          ),
-          const SizedBox(height: 16),
-          PrimaryButton(
-            label: days.isEmpty
-                ? 'تم'
-                : 'تم · وصول ${days.first.$1} ← مغادرة ${days.last.$1}',
-            onPressed: () => Navigator.pop(context),
-          ),
-        ],
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+            const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.block_rounded, size: 14, color: dangerRed),
+                Text(' يوم مغلق', style: TextStyle(fontSize: 12)),
+                SizedBox(width: 16),
+                Icon(Icons.check_circle_rounded, size: 14, color: successGreen),
+                Text(' متاح', style: TextStyle(fontSize: 12)),
+              ],
+            ),
+            const SizedBox(height: 16),
+            PrimaryButton(
+              label: hasDates
+                  ? 'تم · وصول ${dateAr(isoDate(_checkIn))} ← مغادرة ${dateAr(isoDate(_checkOut))}'
+                  : 'تم',
+              onPressed: () {
+                if (hasDates) widget.onApply?.call(_checkIn, _checkOut);
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

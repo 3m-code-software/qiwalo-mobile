@@ -8,7 +8,7 @@ const path = require('node:path');
 
 const routes = [
   'design', 'onboarding', 'login', 'signup', 'telegram', 'recovery',
-  'home', 'filters', 'unit', 'calendar', 'gallery', 'checkout', 'payment', 'success',
+  'home', 'filters', 'unit', 'unit-map', 'calendar', 'gallery', 'checkout', 'payment', 'success',
   'bookings', 'booking-detail', 'favorites', 'profile', 'help', 'contact',
   'owner-dashboard', 'owner-units', 'owner-unit-form', 'owner-bookings',
   'driver-dashboard', 'driver-trips', 'driver-trip-detail', 'driver-vehicle',
