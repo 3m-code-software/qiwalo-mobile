@@ -10,6 +10,8 @@ const routes = [
   'design', 'onboarding', 'login', 'signup', 'telegram', 'recovery',
   'home', 'filters', 'unit', 'calendar', 'gallery', 'checkout', 'payment', 'success',
   'bookings', 'booking-detail', 'favorites', 'profile', 'help',
+  'owner-dashboard', 'owner-units', 'owner-unit-form', 'owner-bookings',
+  'driver-dashboard', 'driver-trips', 'driver-trip-detail', 'driver-vehicle',
 ];
 
 const base = 'http://127.0.0.1:3150/#/';

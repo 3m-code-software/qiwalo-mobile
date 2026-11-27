@@ -7,7 +7,9 @@ import 'package:http/testing.dart';
 import 'package:qiwalo_app/api/api_client.dart';
 import 'package:qiwalo_app/api/unit_repository.dart';
 import 'package:qiwalo_app/main.dart';
+import 'package:qiwalo_app/owner_driver_data.dart';
 import 'package:qiwalo_app/screens/discover.dart';
+import 'package:qiwalo_app/screens/owner_driver.dart';
 
 Map<String, dynamic> _apiBody() => {
       'ok': true,
@@ -58,16 +60,34 @@ Map<String, dynamic> _apiBody() => {
     };
 
 void main() {
-  testWidgets('معاينة التصميم تعرض فهرس الشاشات الستة عشر', (tester) async {
+  testWidgets('معاينة التصميم تعرض فهرس الشاشات الأربعة والعشرين', (tester) async {
     await tester.pumpWidget(const QiwaloApp());
-    expect(find.text('كل الشاشات · ١٦'), findsOneWidget);
+    expect(find.text('كل الشاشات · ٢٤'), findsOneWidget);
     expect(find.text('١٦ · المساعدة والشروط'), findsOneWidget);
+    expect(find.text('١٧ · لوحة المالك'), findsOneWidget);
+    expect(find.text('٢٤ · المركبة والملف'), findsOneWidget);
   });
 
   testWidgets('الاتجاه RTL مفروض على كل التطبيق', (tester) async {
     await tester.pumpWidget(const QiwaloApp());
-    final direction = Directionality.of(tester.element(find.text('كل الشاشات · ١٦')));
+    final direction = Directionality.of(tester.element(find.text('كل الشاشات · ٢٤')));
     expect(direction, TextDirection.rtl);
+  });
+
+  testWidgets('شاشات المالك والسائق بتفتح بنصوص عربية', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: OwnerDashboardScreen()));
+    expect(find.text('لوحة المالك'), findsWidgets);
+    expect(find.text('وحدات منشورة'), findsOneWidget);
+
+    await tester.pumpWidget(const MaterialApp(home: DriverTripsScreen()));
+    expect(find.text('الرحلات المتاحة'), findsWidgets);
+    expect(find.text(driverTrips.first.fare), findsOneWidget);
+
+    await tester.pumpWidget(MaterialApp(
+      home: DriverTripDetailScreen(trip: driverTrips.first),
+    ));
+    expect(find.text('تفاصيل الرحلة'), findsWidgets);
+    expect(find.textContaining(driverTrips.first.to), findsOneWidget);
   });
 
   testWidgets('صفحة الوحدة تعرض بيانات BFF بدل العناصر الفارغة', (tester) async {

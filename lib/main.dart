@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'api/booking_repository.dart';
+import 'owner_driver_data.dart';
 import 'screens/account.dart';
 import 'screens/auth.dart';
 import 'screens/booking.dart';
 import 'screens/design_index.dart';
 import 'screens/discover.dart';
+import 'screens/owner_driver.dart';
 import 'theme.dart';
 
 void main() => runApp(const QiwaloApp());
@@ -80,6 +82,14 @@ class QiwaloApp extends StatelessWidget {
                     : null,
               ),
             );
+          case '/driver-trip-detail':
+            final trip = settings.arguments;
+            return MaterialPageRoute<dynamic>(
+              settings: settings,
+              builder: (_) => DriverTripDetailScreen(
+                trip: trip is DriverTrip ? trip : driverTrips.first,
+              ),
+            );
           default:
             return null;
         }
@@ -99,6 +109,13 @@ class QiwaloApp extends StatelessWidget {
         '/favorites': (_) => const FavoritesScreen(),
         '/profile': (_) => const ProfileScreen(),
         '/help': (_) => const HelpScreen(),
+        '/owner-dashboard': (_) => const OwnerDashboardScreen(),
+        '/owner-units': (_) => const OwnerUnitsScreen(),
+        '/owner-unit-form': (_) => const OwnerUnitFormScreen(),
+        '/owner-bookings': (_) => const OwnerBookingsScreen(),
+        '/driver-dashboard': (_) => const DriverDashboardScreen(),
+        '/driver-trips': (_) => const DriverTripsScreen(),
+        '/driver-vehicle': (_) => const DriverVehicleScreen(),
       },
     );
   }

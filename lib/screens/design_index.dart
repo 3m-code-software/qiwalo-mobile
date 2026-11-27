@@ -26,6 +26,14 @@ const List<_Entry> _entries = [
   _Entry('/favorites', '١٤ · المفضلة', Icons.favorite_rounded),
   _Entry('/profile', '١٥ · الملف الشخصي', Icons.person_rounded),
   _Entry('/help', '١٦ · المساعدة والشروط', Icons.help_center_rounded),
+  _Entry('/owner-dashboard', '١٧ · لوحة المالك', Icons.dashboard_rounded),
+  _Entry('/owner-units', '١٨ · وحداتي', Icons.apartment_rounded),
+  _Entry('/owner-unit-form', '١٩ · إضافة/تعديل وحدة', Icons.edit_location_alt_rounded),
+  _Entry('/owner-bookings', '٢٠ · طلبات الحجز', Icons.event_note_rounded),
+  _Entry('/driver-dashboard', '٢١ · لوحة السائق', Icons.local_taxi_rounded),
+  _Entry('/driver-trips', '٢٢ · الرحلات المتاحة', Icons.route_rounded),
+  _Entry('/driver-trip-detail', '٢٣ · تفاصيل الرحلة', Icons.map_rounded),
+  _Entry('/driver-vehicle', '٢٤ · المركبة والملف', Icons.directions_car_rounded),
 ];
 
 class DesignIndexScreen extends StatelessWidget {
@@ -34,7 +42,7 @@ class DesignIndexScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppShell(
-      title: 'كل الشاشات · ١٦',
+      title: 'كل الشاشات · ٢٤',
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -42,7 +50,7 @@ class DesignIndexScreen extends StatelessWidget {
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(color: gold.withValues(alpha: 0.16), borderRadius: BorderRadius.circular(14)),
             child: const Text(
-              'معاينة للشكل وتجربة المستخدم. صفحة الوحدة والحجز بيقروا بيانات حقيقية من BFF، مع نسخة محلية تظهر لو الخادم مش متاح.',
+              'معاينة للشكل وتجربة المستخدم. صفحة الوحدة والحجز بيقروا بيانات حقيقية من BFF، مع نسخة محلية تظهر لو الخادم مش متاح. شاشات المالك والسائق (١٧–٢٤) معاينة محلية لحد ما يبقى ليها BFF.',
               style: TextStyle(color: ink, height: 1.6),
             ),
           ),
