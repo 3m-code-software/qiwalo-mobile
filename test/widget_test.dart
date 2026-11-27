@@ -136,6 +136,39 @@ void main() {
     expect(find.text('إنشاء حساب'), findsWidgets);
   });
 
+  testWidgets('تسجيل الدخول يقبل الإيميل أو التليفون والباسورد إظهار وقوة', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(412, 1400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(const MaterialApp(home: LoginScreen()));
+
+    expect(find.text('الإيميل أو رقم التليفون'), findsOneWidget);
+    expect(find.text('استخدم الإيميل أو رقم التليفون اللي سجّلت بيه'), findsOneWidget);
+
+    final identifier = find.ancestor(
+      of: find.text('الإيميل أو رقم التليفون'),
+      matching: find.byType(TextField),
+    ).first;
+    await tester.enterText(identifier, 'owner@qiwalo.test');
+    await tester.pump();
+    expect(find.text('تم التعرف على إيميل'), findsOneWidget);
+
+    await tester.enterText(identifier, '01066094050');
+    await tester.pump();
+    expect(find.text('تم التعرف على رقم تليفون'), findsOneWidget);
+
+    final passwordField = find.ancestor(
+      of: find.text('الباسورد'),
+      matching: find.byType(TextField),
+    ).first;
+    await tester.enterText(passwordField, 'Qiwalo123!');
+    await tester.pump();
+    expect(find.textContaining('قوة كلمة المرور: قوية'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.visibility));
+    await tester.pump();
+    expect(find.byIcon(Icons.visibility_off), findsOneWidget);
+  });
+
   testWidgets('الاتجاه RTL مفروض على كل التطبيق', (tester) async {
     await tester.pumpWidget(const QiwaloApp());
     final direction = Directionality.of(tester.element(find.text('قيوالو')));

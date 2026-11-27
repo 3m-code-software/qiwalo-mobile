@@ -253,11 +253,64 @@ class _WelcomeBackdropPainter extends CustomPainter {
       oldDelegate.value != value;
 }
 
-class LoginScreen extends StatelessWidget {
+int passwordStrengthScore(String value) {
+  if (value.isEmpty) return 0;
+  var score = 0;
+  if (value.length >= 8) score++;
+  if (value.length >= 12) score++;
+  if (value.contains(RegExp(r'[A-Za-z]'))) score++;
+  if (value.contains(RegExp(r'[0-9]'))) score++;
+  if (value.contains(RegExp(r'[^A-Za-z0-9]'))) score++;
+  return score > 4 ? 4 : score;
+}
+
+String passwordStrengthLabel(String value) => switch (passwordStrengthScore(value)) {
+      0 => 'اكتب كلمة مرور',
+      1 => 'ضعيفة',
+      2 => 'متوسطة',
+      3 => 'جيدة',
+      _ => 'قوية',
+    };
+
+Color passwordStrengthColor(String value) => switch (passwordStrengthScore(value)) {
+      0 => muted,
+      1 => dangerRed,
+      2 => Colors.orange,
+      3 => gold,
+      _ => successGreen,
+    };
+
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
   @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final TextEditingController _identifierController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  bool _obscurePassword = true;
+
+  @override
+  void dispose() {
+    _identifierController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  String get _identifierHelper {
+    final value = _identifierController.text.trim();
+    if (value.isEmpty) {
+      return 'استخدم الإيميل أو رقم التليفون اللي سجّلت بيه';
+    }
+    if (value.contains('@')) return 'تم التعرف على إيميل';
+    return 'تم التعرف على رقم تليفون';
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final password = _passwordController.text;
     return AppShell(
       title: 'تسجيل الدخول',
       body: ListView(
@@ -265,8 +318,41 @@ class LoginScreen extends StatelessWidget {
         children: [
           const PlaceholderImage(label: 'قيوالو', icon: Icons.login_rounded, height: 110),
           const SizedBox(height: 20),
-          const QField(label: 'الإيميل', hint: 'name@example.com', keyboard: TextInputType.emailAddress),
-          const QField(label: 'الباسورد', hint: '••••••••', obscure: true),
+          TextField(
+            controller: _identifierController,
+            keyboardType: TextInputType.emailAddress,
+            textAlign: TextAlign.right,
+            onChanged: (_) => setState(() {}),
+            decoration: InputDecoration(
+              labelText: 'الإيميل أو رقم التليفون',
+              hintText: 'name@example.com أو 01xxxxxxxxx',
+              helperText: _identifierHelper,
+            ),
+          ),
+          TextField(
+            controller: _passwordController,
+            obscureText: _obscurePassword,
+            textAlign: TextAlign.right,
+            onChanged: (_) => setState(() {}),
+            decoration: InputDecoration(
+              labelText: 'الباسورد',
+              hintText: '••••••••',
+              helperText: 'قوة كلمة المرور: ${passwordStrengthLabel(password)}',
+              helperStyle: TextStyle(color: passwordStrengthColor(password)),
+              suffixIcon: IconButton(
+                icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
+                tooltip: _obscurePassword ? 'إظهار كلمة المرور' : 'إخفاء كلمة المرور',
+                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          LinearProgressIndicator(
+            value: passwordStrengthScore(password) / 4,
+            backgroundColor: line,
+            color: passwordStrengthColor(password),
+            minHeight: 4,
+          ),
           Align(
             alignment: Alignment.centerLeft,
             child: TextButton(
@@ -349,33 +435,11 @@ class _SignupScreenState extends State<SignupScreen> {
     super.dispose();
   }
 
-  int get _passwordScore {
-    final value = _passwordController.text;
-    if (value.isEmpty) return 0;
-    var score = 0;
-    if (value.length >= 8) score++;
-    if (value.length >= 12) score++;
-    if (value.contains(RegExp(r'[A-Za-z]'))) score++;
-    if (value.contains(RegExp(r'[0-9]'))) score++;
-    if (value.contains(RegExp(r'[^A-Za-z0-9]'))) score++;
-    return score > 4 ? 4 : score;
-  }
+  int get _passwordScore => passwordStrengthScore(_passwordController.text);
 
-  String get _passwordLabel => switch (_passwordScore) {
-        0 => 'اكتب كلمة مرور',
-        1 => 'ضعيفة',
-        2 => 'متوسطة',
-        3 => 'جيدة',
-        _ => 'قوية',
-      };
+  String get _passwordLabel => passwordStrengthLabel(_passwordController.text);
 
-  Color get _passwordColor => switch (_passwordScore) {
-        0 => muted,
-        1 => dangerRed,
-        2 => Colors.orange,
-        3 => gold,
-        _ => successGreen,
-      };
+  Color get _passwordColor => passwordStrengthColor(_passwordController.text);
 
   void _showTerms() {
     showModalBottomSheet<void>(
