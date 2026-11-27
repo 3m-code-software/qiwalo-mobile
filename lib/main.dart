@@ -7,6 +7,8 @@ import 'screens/booking.dart';
 import 'screens/design_index.dart';
 import 'screens/discover.dart';
 import 'screens/owner_driver.dart';
+import 'screens/role_login.dart';
+import 'role_data_gate.dart';
 import 'theme.dart';
 
 void main() => runApp(const QiwaloApp());
@@ -90,6 +92,26 @@ class QiwaloApp extends StatelessWidget {
                 trip: trip is DriverTrip ? trip : driverTrips.first,
               ),
             );
+          case '/owner-unit-form':
+            final unitId = settings.arguments;
+            return MaterialPageRoute<dynamic>(
+              settings: settings,
+              builder: (_) => RoleDataGate(
+                role: 'OWNER',
+                title: 'إضافة / تعديل وحدة',
+                builder: (context, snapshot) => OwnerUnitFormScreen(
+                  snapshot: snapshot,
+                  unitId: unitId is String ? unitId : null,
+                ),
+              ),
+            );
+          case '/role-login':
+            return MaterialPageRoute<dynamic>(
+              settings: settings,
+              builder: (_) => RoleLoginScreen(
+                role: settings.arguments is String ? settings.arguments as String : 'OWNER',
+              ),
+            );
           default:
             return null;
         }
@@ -109,13 +131,36 @@ class QiwaloApp extends StatelessWidget {
         '/favorites': (_) => const FavoritesScreen(),
         '/profile': (_) => const ProfileScreen(),
         '/help': (_) => const HelpScreen(),
-        '/owner-dashboard': (_) => const OwnerDashboardScreen(),
-        '/owner-units': (_) => const OwnerUnitsScreen(),
-        '/owner-unit-form': (_) => const OwnerUnitFormScreen(),
-        '/owner-bookings': (_) => const OwnerBookingsScreen(),
-        '/driver-dashboard': (_) => const DriverDashboardScreen(),
-        '/driver-trips': (_) => const DriverTripsScreen(),
-        '/driver-vehicle': (_) => const DriverVehicleScreen(),
+        '/owner-dashboard': (_) => RoleDataGate(
+              role: 'OWNER',
+              title: 'لوحة المالك',
+              builder: (_, snapshot) => OwnerDashboardScreen(snapshot: snapshot),
+            ),
+        '/owner-units': (_) => RoleDataGate(
+              role: 'OWNER',
+              title: 'وحداتي',
+              builder: (_, snapshot) => OwnerUnitsScreen(snapshot: snapshot),
+            ),
+        '/owner-bookings': (_) => RoleDataGate(
+              role: 'OWNER',
+              title: 'طلبات الحجز',
+              builder: (_, snapshot) => OwnerBookingsScreen(snapshot: snapshot),
+            ),
+        '/driver-dashboard': (_) => RoleDataGate(
+              role: 'DRIVER',
+              title: 'لوحة السائق',
+              builder: (_, snapshot) => DriverDashboardScreen(snapshot: snapshot),
+            ),
+        '/driver-trips': (_) => RoleDataGate(
+              role: 'DRIVER',
+              title: 'الرحلات المتاحة',
+              builder: (_, snapshot) => DriverTripsScreen(snapshot: snapshot),
+            ),
+        '/driver-vehicle': (_) => RoleDataGate(
+              role: 'DRIVER',
+              title: 'المركبة والملف',
+              builder: (_, snapshot) => DriverVehicleScreen(snapshot: snapshot),
+            ),
       },
     );
   }

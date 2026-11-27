@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'format.dart';
+
 /// بيانات محلية لمعاينة شاشات المالك والسائق.
 /// لسه مفيش BFF لهذه الأدوار؛ كل الأزرار هنا معاينة واجهة فقط.
 class OwnerUnitRow {
@@ -99,7 +101,22 @@ class DriverTrip {
     required this.passengers,
     required this.icon,
   });
+
+  /// رحلة BFF مشتقّة من حجز؛ الأرقام والتواريخ تُنسّق عربياً هنا لا في الخادم.
+  factory DriverTrip.fromRoleJson(Map<String, dynamic> json) => DriverTrip(
+        id: _string(json['reference'], fallback: _string(json['id'], fallback: '—')),
+        from: _string(json['from']),
+        to: _string(json['to']),
+        time: dateAr(_string(json['date'], fallback: '1970-01-01')),
+        fare: money(json['total'] ?? json['pricePerTrip'] ?? 0),
+        distance: '${arabicDigits(json['durationHours'] ?? 0)} ساعة',
+        passengers: '${arabicDigits(json['guests'] ?? 0)} راكب',
+        icon: Icons.route_rounded,
+      );
 }
+
+String _string(Object? value, {String fallback = ''}) =>
+    value is String && value.isNotEmpty ? value : fallback;
 
 const List<DriverTrip> driverTrips = [
   DriverTrip(

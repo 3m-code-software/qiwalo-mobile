@@ -92,6 +92,50 @@ class ApiClient {
     return decoded;
   }
 
+  /// PATCH JSON للـ BFF. نفس معالجة أخطاء POST، مع إمكانية تمرير توكن الأدوار.
+  Future<Map<String, dynamic>> patchMap(
+    String path, {
+    required Map<String, dynamic> body,
+    Map<String, String>? headers,
+  }) async {
+    final requestHeaders = <String, String>{
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+      ...?headers,
+    };
+    late final http.Response response;
+    try {
+      response = await _http.patch(
+        _uri(path),
+        headers: requestHeaders,
+        body: jsonEncode(body),
+      );
+    } catch (error) {
+      throw ApiException('تعذّر الاتصال بالخادم: $error');
+    }
+
+    Map<String, dynamic>? decoded;
+    try {
+      final value = jsonDecode(response.body);
+      if (value is Map<String, dynamic>) decoded = value;
+    } catch (_) {
+      decoded = null;
+    }
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      final note = decoded?['note'];
+      throw ApiException(
+        note is String && note.isNotEmpty
+            ? note
+            : 'فشل الطلب (${response.statusCode})',
+        statusCode: response.statusCode,
+      );
+    }
+    if (decoded == null) {
+      throw const ApiException('استجابة غير متوقعة من الخادم');
+    }
+    return decoded;
+  }
+
   Future<List<dynamic>> getList(
     String path, {
     Map<String, String>? query,

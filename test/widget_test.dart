@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:qiwalo_app/api/api_client.dart';
+import 'package:qiwalo_app/api/role_repository.dart';
 import 'package:qiwalo_app/api/unit_repository.dart';
 import 'package:qiwalo_app/main.dart';
 import 'package:qiwalo_app/owner_driver_data.dart';
@@ -75,11 +76,15 @@ void main() {
   });
 
   testWidgets('شاشات المالك والسائق بتفتح بنصوص عربية', (tester) async {
-    await tester.pumpWidget(const MaterialApp(home: OwnerDashboardScreen()));
+    await tester.pumpWidget(MaterialApp(
+      home: OwnerDashboardScreen(snapshot: RoleSnapshot.mock()),
+    ));
     expect(find.text('لوحة المالك'), findsWidgets);
     expect(find.text('وحدات منشورة'), findsOneWidget);
 
-    await tester.pumpWidget(const MaterialApp(home: DriverTripsScreen()));
+    await tester.pumpWidget(MaterialApp(
+      home: DriverTripsScreen(snapshot: RoleSnapshot.mock()),
+    ));
     expect(find.text('الرحلات المتاحة'), findsWidgets);
     expect(find.text(driverTrips.first.fare), findsOneWidget);
 

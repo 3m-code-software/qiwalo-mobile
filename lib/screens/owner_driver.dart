@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../api/api_client.dart';
+import '../api/auth_repository.dart';
+import '../api/role_repository.dart';
+import '../format.dart';
 import '../owner_driver_data.dart';
 import '../theme.dart';
 import '../widgets.dart';
@@ -169,7 +173,9 @@ void _previewNotice(BuildContext context, String message) {
 }
 
 class OwnerDashboardScreen extends StatelessWidget {
-  const OwnerDashboardScreen({super.key});
+  const OwnerDashboardScreen({super.key, required this.snapshot});
+
+  final RoleSnapshot snapshot;
 
   @override
   Widget build(BuildContext context) {
@@ -185,15 +191,15 @@ class OwnerDashboardScreen extends StatelessWidget {
               color: navy,
               borderRadius: BorderRadius.circular(16),
             ),
-            child: const Column(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'مرحباً محمد',
-                  style: TextStyle(color: gold, fontSize: 13, fontWeight: FontWeight.bold),
+                  'مرحباً ${snapshot.userName}',
+                  style: const TextStyle(color: gold, fontSize: 13, fontWeight: FontWeight.bold),
                 ),
-                SizedBox(height: 6),
-                Text(
+                const SizedBox(height: 6),
+                const Text(
                   'وحداتك وطلبات الحجز في مكان واحد',
                   style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                 ),
@@ -208,29 +214,31 @@ class OwnerDashboardScreen extends StatelessWidget {
             mainAxisSpacing: 10,
             crossAxisSpacing: 10,
             childAspectRatio: 1.55,
-            children: const [
+            children: [
               _StatCard(
                 icon: Icons.apartment_rounded,
                 label: 'وحدات منشورة',
-                value: '٢',
+                value: arabicDigits(snapshot.ownerSummary?.published ?? 0),
                 color: navy,
               ),
               _StatCard(
                 icon: Icons.calendar_month_rounded,
                 label: 'حجوزات نشطة',
-                value: '٥',
+                value: arabicDigits(snapshot.ownerSummary?.activeBookings ?? 0),
                 color: successGreen,
               ),
               _StatCard(
                 icon: Icons.star_rounded,
                 label: 'متوسط التقييم',
-                value: '٤٫٨',
+                value: arabicDigits(
+                  (snapshot.ownerSummary?.rating ?? 0).toStringAsFixed(1).replaceFirst('.', '٫'),
+                ),
                 color: gold,
               ),
               _StatCard(
                 icon: Icons.pending_actions_rounded,
                 label: 'طلبات جديدة',
-                value: '١',
+                value: arabicDigits(snapshot.ownerSummary?.newRequests ?? 0),
                 color: Colors.orange,
               ),
             ],
@@ -250,7 +258,9 @@ class OwnerDashboardScreen extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'هذه الشاشة معاينة محلية؛ الربط بحساب المالك بيجي في خطوة لاحقة.',
+            snapshot.fromMock
+                ? 'بيانات معاينة محلية — شغّل الإصدار مع الخادم لعرض بيانات حسابك.'
+                : 'البيانات محدثة من خادم قيوالو.',
             style: TextStyle(color: muted, fontSize: 12),
             textAlign: TextAlign.center,
           ),
@@ -261,7 +271,9 @@ class OwnerDashboardScreen extends StatelessWidget {
 }
 
 class OwnerUnitsScreen extends StatelessWidget {
-  const OwnerUnitsScreen({super.key});
+  const OwnerUnitsScreen({super.key, required this.snapshot});
+
+  final RoleSnapshot snapshot;
 
   @override
   Widget build(BuildContext context) {
@@ -276,12 +288,12 @@ class OwnerUnitsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text(
-            '٣ وحدات · ٢ منشورة و١ مسودة',
-            style: TextStyle(color: muted, fontSize: 13),
+          Text(
+            '${arabicDigits(snapshot.ownerProperties.length)} وحدات · ${arabicDigits(snapshot.ownerSummary?.published ?? 0)} منشورة',
+            style: const TextStyle(color: muted, fontSize: 13),
           ),
           const SizedBox(height: 10),
-          ...ownerUnits.map(
+          ...snapshot.ownerProperties.map(
             (unit) => Card(
               child: Padding(
                 padding: const EdgeInsets.all(14),
@@ -297,15 +309,15 @@ class OwnerUnitsScreen extends StatelessWidget {
                           ),
                         ),
                         _StatusChip(
-                          unit.status,
-                          unit.status == 'منشورة' ? successGreen : Colors.orange,
+                          unit.statusAr,
+                          unit.statusAr == 'منشورة' ? successGreen : Colors.orange,
                         ),
                       ],
                     ),
                     const SizedBox(height: 8),
-                    Text('${unit.city} · ${unit.price}',
+                    Text('${unit.cityAr} · ${unit.price}',
                         style: const TextStyle(color: muted, fontSize: 13)),
-                    Text('الإشغال: ${unit.occupancy}',
+                    Text('الحالة: ${unit.statusAr} · المرجع ${unit.id}',
                         style: const TextStyle(color: muted, fontSize: 12)),
                     const SizedBox(height: 10),
                     Row(
@@ -319,7 +331,11 @@ class OwnerUnitsScreen extends StatelessWidget {
                         const SizedBox(width: 10),
                         Expanded(
                           child: ElevatedButton(
-                            onPressed: () => Navigator.pushNamed(context, '/owner-unit-form'),
+                            onPressed: () => Navigator.pushNamed(
+                              context,
+                              '/owner-unit-form',
+                              arguments: unit.id,
+                            ),
                             child: const Text('تعديل'),
                           ),
                         ),
@@ -337,17 +353,68 @@ class OwnerUnitsScreen extends StatelessWidget {
 }
 
 class OwnerUnitFormScreen extends StatefulWidget {
-  const OwnerUnitFormScreen({super.key});
+  const OwnerUnitFormScreen({
+    super.key,
+    required this.snapshot,
+    this.unitId,
+  });
+
+  final RoleSnapshot snapshot;
+  final String? unitId;
 
   @override
   State<OwnerUnitFormScreen> createState() => _OwnerUnitFormScreenState();
 }
 
 class _OwnerUnitFormScreenState extends State<OwnerUnitFormScreen> {
-  final _name = TextEditingController(text: 'دار المدينة بإطلالة على النيل');
-  final _city = TextEditingController(text: 'الأقصر');
-  final _price = TextEditingController(text: '١٬٤٥٠');
+  late final TextEditingController _name;
+  late final TextEditingController _city;
+  late final TextEditingController _price;
   bool _published = true;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final matches = widget.snapshot.ownerProperties
+        .where((property) => property.id == widget.unitId)
+        .toList();
+    final existing = matches.isEmpty ? null : matches.first;
+    _name = TextEditingController(text: existing?.name ?? 'وحدة جديدة');
+    _city = TextEditingController(text: existing?.cityAr ?? 'الأقصر');
+    _price = TextEditingController(
+      text: (existing?.price ?? '١٬٤٥٠ ج.م').replaceAll(' ج.م', ''),
+    );
+    _published = existing?.statusAr == 'منشورة';
+  }
+
+  Future<void> _save() async {
+    setState(() => _saving = true);
+    try {
+      final auth = AuthRepository();
+      final token = auth.useMock ? 'preview-token' : await auth.savedToken;
+      if (token == null || token.isEmpty) {
+        throw const ApiException('سجّل الدخول أولاً.');
+      }
+      final price = int.tryParse(_price.text.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+      await RoleRepository(useMock: auth.useMock).saveOwnerProperty(
+        token: token,
+        id: widget.unitId,
+        name: _name.text,
+        cityAr: _city.text,
+        price: price,
+      );
+      if (!mounted) return;
+      _previewNotice(
+        context,
+        auth.useMock ? 'تم حفظ المعاينة محلياً فقط' : 'تم حفظ الوحدة بنجاح',
+      );
+    } on ApiException catch (error) {
+      if (mounted) _previewNotice(context, error.message);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -364,9 +431,11 @@ class _OwnerUnitFormScreenState extends State<OwnerUnitFormScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text(
-            'معاينة محلية — الحفظ الحقيقي هيتم عبر BFF المالك في خطوة لاحقة.',
-            style: TextStyle(color: muted, fontSize: 12),
+          Text(
+            widget.snapshot.fromMock
+                ? 'معاينة محلية — الحفظ هيفضل هنا لحد ما تتصل بالخادم.'
+                : 'الحفظ بيتم على خادم قيوالو، والنشر النهائي مراجعة إدارية.',
+            style: const TextStyle(color: muted, fontSize: 12),
           ),
           const SizedBox(height: 14),
           QField(label: 'اسم الوحدة', hint: 'مثال: دار المدينة بإطلالة على النيل', controller: _name),
@@ -376,12 +445,12 @@ class _OwnerUnitFormScreenState extends State<OwnerUnitFormScreen> {
             value: _published,
             onChanged: (value) => setState(() => _published = value),
             title: const Text('منشورة للضيوف'),
-            subtitle: Text(_published ? 'الوحدة ظاهرة في البحث' : 'الوحدة مسودة'),
+            subtitle: Text(_published ? 'الوحدة منشورة حالياً' : 'الوحدة مسودة حالياً'),
           ),
           const SizedBox(height: 10),
           PrimaryButton(
-            label: 'حفظ التغييرات (معاينة)',
-            onPressed: () => _previewNotice(context, 'تم حفظ المعاينة محلياً فقط'),
+            label: _saving ? 'جارٍ الحفظ...' : 'حفظ التغييرات',
+            onPressed: _saving ? null : _save,
           ),
           const SizedBox(height: 10),
           SecondaryButton(
@@ -395,7 +464,9 @@ class _OwnerUnitFormScreenState extends State<OwnerUnitFormScreen> {
 }
 
 class OwnerBookingsScreen extends StatelessWidget {
-  const OwnerBookingsScreen({super.key});
+  const OwnerBookingsScreen({super.key, required this.snapshot});
+
+  final RoleSnapshot snapshot;
 
   @override
   Widget build(BuildContext context) {
@@ -406,11 +477,11 @@ class OwnerBookingsScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         children: [
           const Text(
-            'طلبات محلية للمراجعة — القرار النهائي هيتم على الخادم.',
+            'الحجوزات بتتأكد تلقائياً؛ الشاشة للقراءة فقط لحد ما نضيف حالة طلب يدوية.',
             style: TextStyle(color: muted, fontSize: 12),
           ),
           const SizedBox(height: 10),
-          ...ownerBookings.map(
+          ...snapshot.ownerBookings.map(
             (booking) => Card(
               child: Padding(
                 padding: const EdgeInsets.all(14),
@@ -421,19 +492,19 @@ class OwnerBookingsScreen extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            booking.stay,
+                            booking.propertyName,
                             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                           ),
                         ),
                         _StatusChip(
-                          booking.status,
-                          booking.status == 'مؤكد' ? successGreen : Colors.orange,
+                          booking.status == 'CONFIRMED' ? 'مؤكد' : 'قيد الانتظار',
+                          booking.status == 'CONFIRMED' ? successGreen : Colors.orange,
                         ),
                       ],
                     ),
                     const SizedBox(height: 8),
                     InfoRow('المرجع', booking.reference),
-                    InfoRow('الضيف', booking.guest),
+                    InfoRow('الضيف', booking.guestName),
                     InfoRow('التواريخ', booking.dates),
                     InfoRow('الإجمالي', booking.total),
                     const SizedBox(height: 10),
@@ -466,14 +537,57 @@ class OwnerBookingsScreen extends StatelessWidget {
 }
 
 class DriverDashboardScreen extends StatefulWidget {
-  const DriverDashboardScreen({super.key});
+  const DriverDashboardScreen({super.key, required this.snapshot});
+
+  final RoleSnapshot snapshot;
 
   @override
   State<DriverDashboardScreen> createState() => _DriverDashboardScreenState();
 }
 
 class _DriverDashboardScreenState extends State<DriverDashboardScreen> {
-  bool _online = true;
+  late bool _online;
+
+  @override
+  void initState() {
+    super.initState();
+    final vehicles = widget.snapshot.vehicles;
+    _online = vehicles.isEmpty ? false : !vehicles.first.isPaused;
+  }
+
+  Future<void> _toggleOnline(bool value) async {
+    final vehicles = widget.snapshot.vehicles;
+    if (vehicles.isEmpty) {
+      _previewNotice(context, 'أضف مركبة أولاً من شاشة المركبة.');
+      return;
+    }
+    setState(() => _online = value);
+    try {
+      final auth = AuthRepository();
+      final token = auth.useMock ? 'preview-token' : await auth.savedToken;
+      if (token == null || token.isEmpty) {
+        throw const ApiException('سجّل الدخول أولاً.');
+      }
+      await RoleRepository(useMock: auth.useMock).setVehiclePaused(
+        token: token,
+        id: vehicles.first.id,
+        paused: !value,
+      );
+      if (!mounted) return;
+      _previewNotice(
+        context,
+        auth.useMock
+            ? 'تم تحديث حالة المعاينة محلياً'
+            : value
+                ? 'أنت متاح للرحلات الآن'
+                : 'تم إيقاف استقبال الرحلات',
+      );
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      setState(() => _online = !value);
+      _previewNotice(context, error.message);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -500,6 +614,11 @@ class _DriverDashboardScreenState extends State<DriverDashboardScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      Text(
+                        'مرحباً ${widget.snapshot.userName}',
+                        style: const TextStyle(color: gold, fontSize: 12),
+                      ),
+                      const SizedBox(height: 3),
                       const Text(
                         'حالة السائق',
                         style: TextStyle(color: Colors.white70, fontSize: 12),
@@ -516,10 +635,7 @@ class _DriverDashboardScreenState extends State<DriverDashboardScreen> {
                     ],
                   ),
                 ),
-                Switch(
-                  value: _online,
-                  onChanged: (value) => setState(() => _online = value),
-                ),
+                Switch(value: _online, onChanged: _toggleOnline),
               ],
             ),
           ),
@@ -531,38 +647,54 @@ class _DriverDashboardScreenState extends State<DriverDashboardScreen> {
             mainAxisSpacing: 10,
             crossAxisSpacing: 10,
             childAspectRatio: 1.55,
-            children: const [
+            children: [
               _StatCard(
                 icon: Icons.route_rounded,
                 label: 'رحلات اليوم',
-                value: '٣',
+                value: arabicDigits(widget.snapshot.driverSummary?.todayTrips ?? 0),
                 color: navy,
               ),
               _StatCard(
-                icon: Icons.star_rounded,
-                label: 'التقييم',
-                value: '٤٫٩',
-                color: gold,
+                icon: Icons.event_available_rounded,
+                label: 'رحلات قادمة',
+                value: arabicDigits(widget.snapshot.driverSummary?.upcomingTrips ?? 0),
+                color: successGreen,
               ),
             ],
           ),
           const SectionTitle('الرحلة القادمة'),
-          Card(
-            child: ListTile(
-              leading: const CircleAvatar(
-                backgroundColor: Color(0xFFE8F0F6),
-                child: Icon(Icons.flight_takeoff_rounded, color: navy),
-              ),
-              title: const Text('مطار الأقصر ← دار المدينة', style: TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: const Text('اليوم · ٦:٣٠ م · ٣٢٠ ج.م'),
-              trailing: const Icon(Icons.arrow_back_ios_new_rounded, size: 16),
-              onTap: () => Navigator.pushNamed(
-                context,
-                '/driver-trip-detail',
-                arguments: driverTrips.first,
-              ),
-            ),
-          ),
+          widget.snapshot.trips.isEmpty
+              ? Card(
+                  child: ListTile(
+                    leading: const CircleAvatar(
+                      backgroundColor: Color(0xFFE8F0F6),
+                      child: Icon(Icons.event_busy_rounded, color: navy),
+                    ),
+                    title: const Text('لا توجد رحلات حالياً'),
+                    subtitle: const Text('هتظهر الرحلات هنا لما يكون فيه حجز فيه تفاصيل نقل'),
+                  ),
+                )
+              : Card(
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: const Color(0xFFE8F0F6),
+                      child: Icon(widget.snapshot.trips.first.icon, color: navy),
+                    ),
+                    title: Text(
+                      '${widget.snapshot.trips.first.from} ← ${widget.snapshot.trips.first.to}',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Text(
+                      '${widget.snapshot.trips.first.time} · ${widget.snapshot.trips.first.fare}',
+                    ),
+                    trailing: const Icon(Icons.arrow_back_ios_new_rounded, size: 16),
+                    onTap: () => Navigator.pushNamed(
+                      context,
+                      '/driver-trip-detail',
+                      arguments: widget.snapshot.trips.first,
+                    ),
+                  ),
+                ),
           const _QuickAction(
             icon: Icons.route_rounded,
             title: 'الرحلات المتاحة',
@@ -582,7 +714,9 @@ class _DriverDashboardScreenState extends State<DriverDashboardScreen> {
 }
 
 class DriverTripsScreen extends StatelessWidget {
-  const DriverTripsScreen({super.key});
+  const DriverTripsScreen({super.key, required this.snapshot});
+
+  final RoleSnapshot snapshot;
 
   @override
   Widget build(BuildContext context) {
@@ -592,12 +726,20 @@ class DriverTripsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text(
-            '٣ رحلات قريبة · البيانات محلية للمراجعة',
-            style: TextStyle(color: muted, fontSize: 13),
+          Text(
+            '${arabicDigits(snapshot.trips.length)} رحلات · ${snapshot.fromMock ? 'بيانات معاينة محلية' : 'محدثة من خادم قيوالو'}',
+            style: const TextStyle(color: muted, fontSize: 13),
           ),
           const SizedBox(height: 10),
-          ...driverTrips.map(
+          if (snapshot.trips.isEmpty)
+            const Card(
+              child: ListTile(
+                leading: Icon(Icons.event_busy_rounded, color: muted),
+                title: Text('لا توجد رحلات متاحة حالياً'),
+                subtitle: Text('الرحلات هتظهر هنا لما يكون فيه حجز فيه تفاصيل نقل.'),
+              ),
+            ),
+          ...snapshot.trips.map(
             (trip) => Card(
               child: Padding(
                 padding: const EdgeInsets.all(14),
@@ -716,7 +858,9 @@ class DriverTripDetailScreen extends StatelessWidget {
 }
 
 class DriverVehicleScreen extends StatelessWidget {
-  const DriverVehicleScreen({super.key});
+  const DriverVehicleScreen({super.key, required this.snapshot});
+
+  final RoleSnapshot snapshot;
 
   @override
   Widget build(BuildContext context) {
@@ -738,32 +882,42 @@ class DriverVehicleScreen extends StatelessWidget {
               padding: const EdgeInsets.all(14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  SectionTitle('بيانات المركبة'),
-                  InfoRow('الطراز', 'تويوتا كامري ٢٠٢٢'),
-                  InfoRow('اللوحة', 'ق م ١٢٣٤'),
-                  InfoRow('اللون', 'أبيض'),
-                  InfoRow('المقاعد', '٤'),
-                  Divider(height: 22),
-                  SectionTitle('حالة المستندات'),
-                  CheckboxListTile(
-                    value: true,
-                    onChanged: null,
-                    title: Text('رخصة القيادة'),
-                    subtitle: Text('سارية حتى ٢٠٢٨'),
+                children: [
+                  const SectionTitle('بيانات المركبة'),
+                  if (snapshot.vehicles.isEmpty)
+                    const InfoRow('الحالة', 'لا توجد مركبة مسجّلة بعد')
+                  else ...snapshot.vehicles.map(
+                    (vehicle) => Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        InfoRow('الاسم', vehicle.name),
+                        InfoRow('الطراز', vehicle.model.isEmpty ? '—' : vehicle.model),
+                        InfoRow('اللوحة', vehicle.plateNumber.isEmpty ? '—' : vehicle.plateNumber),
+                        InfoRow('المدينة', vehicle.cityAr),
+                        InfoRow('المقاعد', arabicDigits(vehicle.capacity)),
+                        InfoRow('الأجرة', money(vehicle.pricePerTrip)),
+                        InfoRow(
+                          'المسار',
+                          '${vehicle.routeFrom} ← ${vehicle.routeTo}',
+                        ),
+                        InfoRow('الحالة', vehicle.statusAr),
+                        InfoRow('استقبال الرحلات', vehicle.isPaused ? 'موقوف' : 'متاح'),
+                        if (vehicle.blockedDates.isNotEmpty)
+                          InfoRow('تواريخ محجوبة', vehicle.blockedDates.map(dateAr).join(' · ')),
+                        const SizedBox(height: 8),
+                      ],
+                    ),
                   ),
-                  CheckboxListTile(
-                    value: true,
-                    onChanged: null,
-                    title: Text('التأمين'),
-                    subtitle: Text('ساري حتى ١٢/٢٠٢٦'),
-                  ),
-                  CheckboxListTile(
-                    value: false,
-                    onChanged: null,
-                    title: Text('صورة المركبة'),
-                    subtitle: Text('مطلوبة'),
-                  ),
+                  const Divider(height: 22),
+                  const SectionTitle('الملف والاشتراك'),
+                  InfoRow('الاسم', snapshot.driverProfile?.name ?? '—'),
+                  InfoRow('الهاتف', snapshot.driverProfile?.phone ?? '—'),
+                  InfoRow('المدينة', snapshot.driverProfile?.cityAr ?? '—'),
+                  InfoRow('الاشتراك', snapshot.driverProfile?.subscriptionAr ?? '—'),
+                  InfoRow('التوثيق', snapshot.driverProfile?.verificationStatus ?? '—'),
+                  if (snapshot.driverProfile != null &&
+                      snapshot.driverProfile!.note.isNotEmpty)
+                    InfoRow('ملاحظة', snapshot.driverProfile!.note),
                 ],
               ),
             ),
